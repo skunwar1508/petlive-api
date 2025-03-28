@@ -59,6 +59,8 @@ let langauge = {
         notConnected : "Doctor is not connected with patient",
         profileRejected: "Profile rejected by admin. Please contact.",
         profilePending: "Profile is pending for approval.",
+        otpsent: "OTP has been sent successfully.",
+        validationErrorWithData: "Validation error: Missing or invalid data.",
     },
 };
 

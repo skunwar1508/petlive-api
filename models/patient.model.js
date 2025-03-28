@@ -1,34 +1,94 @@
 const mongoose = require('mongoose');
 
-const patientSchema = new mongoose.Schema({
-    name: {
+const petSchema = new mongoose.Schema({
+    phone: {
         type: String,
-        required: true,
         trim: true,
     },
-    age: {
-        type: Number,
-        required: true,
+    email: {
+        type: String,
+        trim: true,
+    },
+    ownerName: {
+        type: String,
+        trim: true,
+    },
+    ownerGender: {
+        type: String,
+        enum: ['Male', 'Female', 'Other'],
+    },
+    ownerDob: {
+        type: Date,
+    },
+    ownerImage: {
+        type: String,
+    },
+    name: {
+        type: String,
+        trim: true,
+    },
+    dob: {
+        type: Date,
+    },
+    petType: {
+        type: String,
+        trim: true,
     },
     gender: {
         type: String,
         enum: ['Male', 'Female', 'Other'],
-        required: true,
     },
-    contactNumber: {
+    interestFor: {
         type: String,
-        required: true,
+        trim: true,
     },
-    address: {
+    reasonToFind: {
         type: String,
-        required: true,
+        trim: true,
     },
-    medicalHistory: {
+    weight: {
+        type: Number,
+    },
+    breed: {
+        type: String,
+        trim: true,
+    },
+    color: {
+        type: String,
+        trim: true,
+    },
+    activityLevel: {
+        type: String,
+        trim: true,
+    },
+    dietaryPreference: {
+        type: String,
+        trim: true,
+    },
+    trainingBehaviour: {
+        type: String,
+        trim: true,
+    },
+    outdoorHabits: {
+        type: String,
+        trim: true,
+    },
+    petImages: {
         type: [String],
         default: [],
+    },
+    isAcceptTerms: {
+        type: Boolean,
+    },
+    isProfileCompleted: {
+        type: Boolean,
+    },
+    lastStep: {
+        type: Number,
+        default: 0,
     },
 }, {
     timestamps: true,
 });
 
-module.exports = mongoose.model('Patient', patientSchema);
+module.exports = mongoose.model('Pet', petSchema);

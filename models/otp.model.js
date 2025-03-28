@@ -23,6 +23,7 @@ const OtpSchema = new Schema({
     phone: { type: String },
     usedFor: { type: String },
     expired: { type: Date, default: Date.now, index: { expires: '10m' } },
+    isDeleted: { type: Boolean, default: false }
 }, {
     timestamps: {
         createdAt: 'createdAt',

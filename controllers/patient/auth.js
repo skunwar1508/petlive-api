@@ -4,246 +4,377 @@ const otpModel = require("../../models/otp.model.js");
 const patientModel = require("../../models/patient.model.js");
 const roles = require("../../utils/roles.js");
 const apiResponse = require("../../utils/apiResponse.js");
-
-const login = async (req, res) => {
-    try {
-        const { phone } = req.body;
-        let otpCode = Math.floor(100000 + Math.random() * 900000);
-
-        let patient = await patientModel.findOne({ $or: [{ phone: phone }, { email: phone }] });
-        if (patient) {
-            let newOtp = new otpModel({
-                userId: patient._id,
-                otp: otpCode,
-                email: patient.email,
-                phone: patient.phone,
-                usedFor: "LOGIN",
-            });
-            await newOtp.save();
-
-            let resData = {
-                patientId: patient._id,
-                otp: otpCode,
-            }
-
-            if (process.env.MODE === "development") {
-                return apiResponse.successResponse(res, `A code (${otpCode}) has been sent to your phone/email. (${phone})`, resData);
-            }
-            return apiResponse.successResponse(res, `A code has been sent to your phone/email.`, { patientId: patient._id });
-        } else {
-            return apiResponse.errorMessage(res, 400, "Mobile number is not register, please register before login");
-        }
-
-    } catch (error) {
-        console.log(error);
-        return apiResponse.somethingWentWrongMsg(res);
-    }
-}
-
-// ==========================================================
-// ==========================================================
-// Login checkyOtp/patient
-const verifyOtp = async (req, res) => {
-    try {
-        const requestData = req.body;
-        let otp = await otpModel.find({ userId: requestData.id }).sort({ createdAt: -1 }).limit(1);
-        if (otp.length === 0) {
-            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
-        }
-
-        if (otp[0].otp === requestData.otp) {
-            const patient = await patientModel.findOne({ _id: requestData.id });
-            if (!patient) {
-                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
-            }
-
-            let payLoad = {
-                id: patient._id,
-                role: roles.patient,
-            };
-
-            let token = jwt.sign(payLoad, process.env.LOGIN_KEY, {
-                expiresIn: "30d", // expires in 1 Day
-            });
-
-            patient._doc.token = token;
-            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), patient);
-        }
-
-        return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
-    } catch (error) {
-        console.log(error);
-        return apiResponse.somethingWentWrongMsg(res);
-    }
-}
-
-// ==========================================================
-// ==========================================================
+const bcrypt = require("bcrypt");
 
 const signup = async (req, res) => {
     try {
         const requestData = req.body;
-        let existingPatient = await patientModel.findOne({
-            // _id: { $ne: requestData.id },
+
+        let existingUser = await patientModel.findOne({
             phone: requestData.phone,
-            email: requestData.email,
             isDeleted: false,
         });
 
-        if (existingPatient) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistswithcreds"));
+        if (existingUser) {
+            if (!existingUser.isProfileCompleted) {
+                const otpCode = Math.floor(100000 + Math.random() * 9000); // 4-digit OTP
+                const newOtp = new otpModel({
+                    otp: otpCode,
+                    phone: requestData.phone,
+                    usedFor: "SIGNUP",
+                });
 
-        requestData.patientId = generatePateintId();
+                await newOtp.save();
+                if (process.env.MODE === "development") {
+                    existingUser._doc.otp = otpCode;
+                }
 
-        let patientData = new patientModel(requestData);
-        const patient = await patientData.save();
-
-        let payLoad = {
-            id: patient._id,
-            role: roles.patient,
-        };
-
-        let token = jwt.sign(payLoad, process.env.LOGIN_KEY, {
-            expiresIn: "24h", // expires in 1 Day
-        });
-
-        patient._doc.token = token;
-        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), patient);
-    } catch (error) {
-        console.log(error);
-        return apiResponse.somethingWentWrongMsg(res);
-    }
-}
-
-// ==========================================================
-// ==========================================================
-
-// checkyOtp signup
-const verifySignUpOTP = async (req, res) => {
-    try {
-        const requestData = req.body;
-        if (requestData.phone) {
-            let otp = await otpModel.find({ phone: requestData.phone }).sort({ createdAt: -1 }).limit(1);
-            if (otp.length === 0) {
-                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
+                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "otpsentphone"), existingUser);
             }
-
-            if (otp[0].otp === requestData.otp) {
-                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), null);
-            }
-        } else if (requestData.email) {
-            let otp = await otpModel.find({ email: requestData.email }).sort({ createdAt: -1 }).limit(1);
-            if (otp.length === 0) {
-                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
-            }
-
-            if (otp[0].otp === requestData.otp) {
-                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), null);
-            }
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistswithcreds"));
         }
 
-        return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
-    } catch (error) {
-        console.log(error);
-        return apiResponse.somethingWentWrongMsg(res);
-    }
-}
-
-// ==========================================================
-// ==========================================================
-
-// checkMobile
-const sendOtp = async (req, res) => {
-    try {
-        const requestData = req.body;
-        let existingPatient = await patientModel.findOne({
-            // _id: { $ne: requestData.id },
-            $or: [{ phone: requestData.phone }, { email : requestData.email }],
-            // phone: requestData.phone,
-            // email: requestData.email,
-            isDeleted: false,
+        let userData = new patientModel({
+            phone: requestData.phone,
+            isAccept: requestData.isAccept,
+            lastStep: 1,
         });
-        if (existingPatient) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistswithcreds"));
 
-        if (requestData.phone) {
-            let otpCode = Math.floor(100000 + Math.random() * 900000);
-            console.log(otpCode)
+        const user = await userData.save();
+        const otpCode = Math.floor(100000 + Math.random() * 9000); // 4-digit OTP
+        const newOtp = new otpModel({
+            otp: otpCode,
+            phone: requestData.phone,
+            usedFor: "SIGNUP",
+        });
 
-            let newOtp = new otpModel({
-                otp: otpCode,
-                phone: requestData.phone,
-                usedFor: "SIGNUP",
-            });
-            await newOtp.save();
+        await newOtp.save();
 
-            if (process.env.MODE === "development") {
-                return apiResponse.successResponse(res, `A code (${otpCode}) has been sent to your phone. (${requestData.phone})`, otpCode);
-            }
-            return apiResponse.successResponse(res, `A code has been sent to your mobile phone.`, null);
-        } else if (requestData.email) {
-            let otpCode = Math.floor(100000 + Math.random() * 900000);
-
-            let newOtp = new otpModel({
-                otp: otpCode,
-                email: requestData.email,
-                usedFor: "SIGNUP",
-            });
-            await newOtp.save();
-
-            if (process.env.MODE === "development") {
-                return apiResponse.successResponse(res, `A code (${otpCode}) has been sent to your email. (${requestData.email})`, otpCode);
-            }
-            return apiResponse.successResponse(res, `A code has been sent to your email.`, null);
-        } else {
-            return apiResponse.errorMessage(res, 400, "Phone or Email is required");
+        // Include OTP in the response if in development mode
+        if (process.env.MODE === "development") {
+            user.otp = otpCode;
         }
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
     } catch (error) {
         console.log(error);
         return apiResponse.somethingWentWrongMsg(res);
     }
-}
-
-// ==========================================================
-// ==========================================================
-
-const refreshToken = async (req, res) => {
-    try {
-        let payload = {
-            id: req.doc.id,
-            role: req.doc.role,
-        };
-        let token = jwt.sign(payload, process.env.LOGIN_KEY, {
-            expiresIn: "30d", // expires in 1 Day
-        });
-
-        // return apiResponse.successResponse(res, "Success", { token: token });
-        return res.status(200).json({
-            status: true,
-            message: "Success",
-            token,
-            data: null,
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: CMS.Lang_Messages("en", "somethingwentwrong") });
-    }
-}
-
-// ==========================================================
-// ==========================================================
-
-//Function for uniquie Ids
-function generatePateintId() {
-    const prefix = "LGP";
-    const randomNumber = Math.floor(100000 + Math.random() * 9000);
-    return `${prefix}${randomNumber}`;
-}
-
-module.exports = {
-    sendOtp,
-    signup,
-    verifySignUpOTP,
-    login,
-    verifyOtp,
-    refreshToken
 };
 
+const lastStep = async (req, res) => {
+    try {
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { lastStep: user.lastStep });
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const getProfile = async (req, res) => {
+    try {
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const login = async (req, res) => {
+    try {
+        const requestData = req.body;
+
+        let user = await patientModel.findOne({
+            phone: requestData.phone,
+            isDeleted: false,
+        });
+
+        if (!user) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        }
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const verifyOtp = async (req, res) => {
+    try {
+        const requestData = req.body;
+
+        if (requestData.phone) {
+            let otp = await otpModel.find({ phone: requestData.phone, usedFor: "SIGNUP" }).sort({ createdAt: -1 }).limit(1);
+
+            if (otp.length === 0) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
+            }
+
+            if (otp[0].otp === requestData.otp) {
+            let user = await patientModel.findOne({ phone: requestData.phone, isDeleted: false }).select("-password");
+
+            if (!user) {
+                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+            }
+
+            if (user.isProfileCompleted === true) {
+                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+            }
+
+            let payLoad = {
+                id: user._id,
+                role: roles.patient,
+            };
+
+            let token = jwt.sign(payLoad, process.env.LOGIN_KEY, {
+                expiresIn: "24h", // expires in 1 Day
+            });
+
+            user._doc.token = token;
+            await otpModel.deleteOne({ _id: otp[0]._id });
+
+            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { data: user });
+            } else {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
+            }
+        } else {
+            return apiResponse.validationErrorWithData(res, "Phone is required");
+        }
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const resendOtp = async (req, res) => {
+    try {
+        const { phone } = req.body;
+        const user = await patientModel.findOne({
+            phone: phone,
+            isDeleted: false,
+            isProfileCompleted: false,
+        });
+
+        if (!user) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        }
+
+        // Generate a new OTP
+        const otpCode = Math.floor(100000 + Math.random() * 9000); // 4-digit OTP
+        const newOtp = new otpModel({
+            otp: otpCode,
+            phone: phone,
+            usedFor: "SIGNUP",
+        });
+
+        await newOtp.save();
+
+        // Include OTP in the response if in development mode
+        if (process.env.MODE === "development") {
+            user.otp = otpCode;
+        }
+
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "otpsent"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep1 = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        user.email = email;
+        user.lastStep = 2;
+        await user.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep2 = async (req, res) => {
+    try {
+        const { ownerName, ownerGender, ownerDob, ownerImage } = req.body;
+
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        user.ownerName = ownerName;
+        user.ownerGender = ownerGender;
+        user.ownerDob = ownerDob;
+        user.ownerImage = ownerImage;
+        user.lastStep = 3;
+        await user.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep3 = async (req, res) => {
+    try {
+        const { name, dob } = req.body;
+
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        user.name = name;
+        user.dob = dob;
+        user.lastStep = 4;
+        await user.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep4 = async (req, res) => {
+    try {
+        const { petType, gender } = req.body;
+
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        user.petType = petType;
+        user.gender = gender;
+        user.lastStep = 5;
+        await user.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep5 = async (req, res) => {
+    try {
+        const { intrestFor } = req.body;
+
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        user.intrestFor = intrestFor;
+        user.lastStep = 6;
+        await user.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep6 = async (req, res) => {
+    try {
+        const { reasonToFind } = req.body;
+
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        user.reasonToFind = reasonToFind;
+        user.lastStep = 7;
+        await user.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep7 = async (req, res) => {
+    try {
+        const { weight, breed, color } = req.body;
+
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        user.weight = weight;
+        user.breed = breed;
+        user.color = color;
+        user.lastStep = 8;
+        await user.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep8 = async (req, res) => {
+    try {
+        const { activityLevel, dietaryPreference, trainingBehaviour, outdoorHabits } = req.body;
+
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        user.activityLevel = activityLevel;
+        user.dietaryPreference = dietaryPreference;
+        user.trainingBehaviour = trainingBehaviour;
+        user.outdoorHabits = outdoorHabits;
+        user.lastStep = 9;
+        await user.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep9 = async (req, res) => {
+    try {
+        const { petImages } = req.body;
+
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        user.petImages = petImages;
+        user.isProfileCompleted = true;
+        user.lastStep = 10; // Assuming 10 indicates completion
+        await user.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+module.exports = {
+    signup,
+    signupStep1,
+    signupStep2,
+    signupStep3,
+    signupStep4,
+    signupStep5,
+    signupStep6,
+    signupStep7,
+    signupStep8,
+    signupStep9,
+    lastStep,
+    getProfile,
+    login,
+    verifyOtp,
+    resendOtp,
+};
