@@ -7,6 +7,49 @@ const apiResponse = require("../../utils/apiResponse.js");
 const bcrypt = require("bcrypt");
 // const sendSms = require("../../utils/smsService.js");
 
+const login = async (req, res) => {
+    try {
+        const requestData = req.body;
+
+        if (!requestData.email || !requestData.password) {
+            return apiResponse.validationErrorWithData(res, "Email and password are required");
+        }
+
+        let doctor = await doctorModel.findOne({ email: requestData.email.toLowerCase(), isProfileCompleted:true, isDeleted: false });
+        if (!doctor) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        }
+        if(doctor.approveProfile === "rejected") {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profileRejected"));
+        }
+        if(doctor.approveProfile === "pending") {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profilePending"));
+        }
+
+
+        const isPasswordValid = await bcrypt.compare(requestData.password, doctor.password);
+        if (!isPasswordValid) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "invalidcredentials"));
+        }
+
+        let payLoad = {
+            id: doctor._id,
+            role: roles.doctor,
+        };
+        let token = jwt.sign(payLoad, process.env.LOGIN_KEY, {
+            expiresIn: "24h", // expires in 1 Day
+        });
+
+        doctor._doc.token = token;
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+
+
 const verifySignUpOTP = async (req, res) => {
     try {
         const requestData = req.body;
@@ -284,6 +327,7 @@ const signupStep7 = async (req, res) => {
 
 
 module.exports = {
+    login,
     signup,
     resendOTP,
     verifySignUpOTP,

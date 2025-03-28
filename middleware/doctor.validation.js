@@ -15,6 +15,23 @@ const validationCheck = async (value) => {
 
 // ===========================================================================
 
+const loginValidation = async (req, res, next) => {
+    const schema = Joi.object({
+        email: Joi.string(),
+        password: Joi.string()
+    });
+
+    const value = schema.validate(req.body);
+
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    next();
+};
+
+// ===========================================================================
+
 const signUpStepValidation = async (req, res, next) => {
     const schema = Joi.object({
         name: Joi.string(),
@@ -163,6 +180,7 @@ const signUpStep7Validation = async (req, res, next) => {
 // ==========================================================
 
 module.exports = {
+    loginValidation,
     signUpStepValidation,
     signUpResendValidation,
     signUpVerifyValidation,

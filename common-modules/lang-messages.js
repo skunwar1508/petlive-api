@@ -57,6 +57,8 @@ let langauge = {
         sevNotForDoc : "severityOfIssue is not allowed for Doctor!",
         artSubApp : "Article submitted for approval",
         notConnected : "Doctor is not connected with patient",
+        profileRejected: "Profile rejected by admin. Please contact.",
+        profilePending: "Profile is pending for approval.",
     },
 };
 
