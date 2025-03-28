@@ -13,6 +13,7 @@ router.post('/login', validation.loginValidation, authController.login);
 router.post('/signup', validation.signUpStepValidation, authController.signup);
 router.post('/signup/verify', validation.signUpVerifyValidation, authController.verifySignUpOTP);
 router.post('/signup/resend', validation.signUpResendValidation, authController.resendOTP);
+router.get('/profile', verifyJWT, authController.getProfile);
 
 // router.post('/verifyOtp', validation.verifyOtpValidation, authController.verifyOtp);
 // router.post('/verifySignUpOTP', validation.verifyOtpSignupValidation, authController.verifySignUpOTP);

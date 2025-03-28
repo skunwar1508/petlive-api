@@ -323,6 +323,16 @@ const signupStep7 = async (req, res) => {
 };
 
 // ==========================================================================
+const getProfile = async (req, res) => {
+    try {
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false }).select("-password").populate(["profileImage", "licenceImage"]);
+        if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
 // ==========================================================================
 
 
@@ -337,5 +347,6 @@ module.exports = {
     signupStep4,
     signupStep5,
     signupStep6,
-    signupStep7
+    signupStep7,
+    getProfile
 };
