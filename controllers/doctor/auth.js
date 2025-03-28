@@ -92,7 +92,25 @@ const signup = async (req, res) => {
             approveProfile : { $ne: "rejected" }
         });
 
-        if (existingDoctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistswithcreds"));
+        if (existingDoctor) {
+            if (!existingDoctor.isProfileCompleted) {
+                let otpCode = Math.floor(100000 + Math.random() * 9000);
+                let newOtp = new otpModel({
+                    otp: otpCode,
+                    email: requestData.email.toLowerCase(),
+                    usedFor: "SIGNUP",
+                });
+
+                await newOtp.save();
+
+                if (process.env.MODE === "development") {
+                    existingDoctor._doc.otp = otpCode;
+                }
+
+                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "otpsentemail"), existingDoctor);
+            }
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistemail"));
+        };
 
         const hashedPassword = await bcrypt.hash(requestData.password, 10);
 
@@ -142,10 +160,138 @@ function generateDoctorId() {
 
 // ==========================================================================
 // ==========================================================================
+const signupStep1 = async (req, res) => {
+    // update profileImage
+    try {
+        const requestData = req.body;
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted:false, approveProfile: { $ne: "rejected" } });
+        if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        doctor.profileImage = requestData.profileImage;
+        doctor.lastStep = 2;
+        await doctor.save();
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+}
+
+// ==========================================================================
+// ==========================================================================
+
+const signupStep2 = async (req, res) => {
+    // update gender
+    try {
+        const requestData = req.body;
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted:false, approveProfile: { $ne: "rejected" } });
+        if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        doctor.gender = requestData.gender;
+        doctor.lastStep = 3;
+        await doctor.save();
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+}
+
+const signupStep3 = async (req, res) => {
+    // update age
+    try {
+        const requestData = req.body;
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        doctor.age = requestData.age;
+        doctor.lastStep = 4;
+        await doctor.save();
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep4 = async (req, res) => {
+    // update experience, registrationNo, licenceImage
+    try {
+        const requestData = req.body;
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        doctor.experience = requestData.experience;
+        doctor.registrationNo = requestData.registrationNo;
+        doctor.licenceImage = requestData.licenceImage;
+        doctor.lastStep = 5;
+        await doctor.save();
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep5 = async (req, res) => {
+    // update animalPreference
+    try {
+        const requestData = req.body;
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        doctor.animalPreference = requestData.animalPreference;
+        doctor.lastStep = 6;
+        await doctor.save();
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep6 = async (req, res) => {
+    // update primarySpecialisation, otherSpecialisation
+    try {
+        const requestData = req.body;
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        doctor.primarySpecialisation = requestData.primarySpecialisation;
+        doctor.otherSpecialisation = requestData.otherSpecialisation;
+        doctor.lastStep = 7;
+        await doctor.save();
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep7 = async (req, res) => {
+    // update bio
+    try {
+        const requestData = req.body;
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        doctor.bio = requestData.bio;
+        doctor.isProfileCompleted = true;
+        doctor.lastStep = 8;
+        await doctor.save();
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+// ==========================================================================
+// ==========================================================================
 
 
 module.exports = {
     signup,
     resendOTP,
-    verifySignUpOTP
+    verifySignUpOTP,
+    signupStep1,
+    signupStep2,
+    signupStep3,
+    signupStep4,
+    signupStep5,
+    signupStep6,
+    signupStep7
 };
