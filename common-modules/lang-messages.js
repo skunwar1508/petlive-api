@@ -61,6 +61,11 @@ let langauge = {
         profilePending: "Profile is pending for approval.",
         otpsent: "OTP has been sent successfully.",
         validationErrorWithData: "Validation error: Missing or invalid data.",
+        invalid_patient_or_amount: "Invalid patient ID or amount.",
+        patient_not_found: "Patient not found.",
+        wallet_amount_added: "Wallet amount added successfully.",
+        unauthorized_access: "Unauthorized access.",
+        userblocked: "User is blocked.",
     },
 };
 

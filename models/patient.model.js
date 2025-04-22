@@ -87,6 +87,15 @@ const petSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    walletBalance: { type: Number, default: 0 },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
+    },
 }, {
     timestamps: true,
 });

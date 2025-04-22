@@ -14,7 +14,6 @@ const signup = async (req, res) => {
             phone: requestData.phone,
             isDeleted: false,
         });
-
         if (existingUser) {
             if (!existingUser.isProfileCompleted) {
                 const otpCode = Math.floor(100000 + Math.random() * 9000); // 4-digit OTP
@@ -52,7 +51,7 @@ const signup = async (req, res) => {
 
         // Include OTP in the response if in development mode
         if (process.env.MODE === "development") {
-            user.otp = otpCode;
+            user._doc.otp = otpCode;
         }
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
     } catch (error) {
@@ -93,10 +92,28 @@ const login = async (req, res) => {
             phone: requestData.phone,
             isDeleted: false,
         });
-
-        if (!user) {
+        if (!user || user.isDeleted === true) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         }
+        if (user.isProfileCompleted === false) {
+            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { isProfileCompleted: user.isProfileCompleted });
+        }
+        if (user.isActive === false) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userblocked"));
+        }
+        const otpCode = Math.floor(100000 + Math.random() * 9000); // 4-digit OTP
+        const newOtp = new otpModel({
+            otp: otpCode,
+            phone: requestData.phone,
+            usedFor: "LOGIN",
+        });
+
+        await newOtp.save();
+        // Include OTP in the response if in development mode
+        if (process.env.MODE === "development") {
+            user._doc.otp = otpCode;
+        }
+        console.log(process.env.MODE, "otpCode", user);
 
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
     } catch (error) {
@@ -104,7 +121,48 @@ const login = async (req, res) => {
         return apiResponse.somethingWentWrongMsg(res);
     }
 };
+const verifyLoginOtp = async (req, res) => {
+    try {
+        const requestData = req.body;
 
+        if (requestData.phone) {
+            let otp = await otpModel.find({ phone: requestData.phone, usedFor: "LOGIN" }).sort({ createdAt: -1 }).limit(1);
+
+            if (otp.length === 0) {
+                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
+            }
+
+            if (otp[0].otp === requestData.otp) {
+                let user = await patientModel.findOne({ phone: requestData.phone, isDeleted: false }).select("-password");
+
+                if (!user) {
+                    return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+                }
+
+                let payLoad = {
+                    id: user._id,
+                    role: roles.patient,
+                };
+
+                let token = jwt.sign(payLoad, process.env.LOGIN_KEY, {
+                    expiresIn: "24h", // expires in 1 Day
+                });
+
+                user._doc.token = token;
+                await otpModel.deleteOne({ _id: otp[0]._id });
+
+                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { data: user });
+            } else {
+                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
+            }
+        } else {
+            return apiResponse.validationErrorWithData(res, "Phone is required");
+        }
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+}
 const verifyOtp = async (req, res) => {
     try {
         const requestData = req.body;
@@ -113,35 +171,35 @@ const verifyOtp = async (req, res) => {
             let otp = await otpModel.find({ phone: requestData.phone, usedFor: "SIGNUP" }).sort({ createdAt: -1 }).limit(1);
 
             if (otp.length === 0) {
-            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
+                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
             }
 
             if (otp[0].otp === requestData.otp) {
-            let user = await patientModel.findOne({ phone: requestData.phone, isDeleted: false }).select("-password");
+                let user = await patientModel.findOne({ phone: requestData.phone, isDeleted: false }).select("-password");
 
-            if (!user) {
-                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
-            }
+                if (!user) {
+                    return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+                }
 
-            if (user.isProfileCompleted === true) {
-                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
-            }
+                if (user.isProfileCompleted === true) {
+                    return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+                }
 
-            let payLoad = {
-                id: user._id,
-                role: roles.patient,
-            };
+                let payLoad = {
+                    id: user._id,
+                    role: roles.patient,
+                };
 
-            let token = jwt.sign(payLoad, process.env.LOGIN_KEY, {
-                expiresIn: "24h", // expires in 1 Day
-            });
+                let token = jwt.sign(payLoad, process.env.LOGIN_KEY, {
+                    expiresIn: "24h", // expires in 1 Day
+                });
 
-            user._doc.token = token;
-            await otpModel.deleteOne({ _id: otp[0]._id });
+                user._doc.token = token;
+                await otpModel.deleteOne({ _id: otp[0]._id });
 
-            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { data: user });
+                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { data: user });
             } else {
-            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
+                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
             }
         } else {
             return apiResponse.validationErrorWithData(res, "Phone is required");
@@ -375,6 +433,7 @@ module.exports = {
     lastStep,
     getProfile,
     login,
+    verifyLoginOtp,
     verifyOtp,
     resendOtp,
 };
