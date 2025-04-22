@@ -79,9 +79,11 @@ const petSchema = new mongoose.Schema({
     },
     isAcceptTerms: {
         type: Boolean,
+        default: false,
     },
     isProfileCompleted: {
         type: Boolean,
+        default: false,
     },
     lastStep: {
         type: Number,
