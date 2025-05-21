@@ -129,7 +129,7 @@ const step4Validation = async (req, res, next) => {
 
 const step5Validation = async (req, res, next) => {
     const schema = Joi.object({
-        intrestFor: Joi.string().required(),
+        intrestFor: Joi.string().allow("",null),
     });
 
     const value = schema.validate(req.body);
@@ -145,7 +145,7 @@ const step5Validation = async (req, res, next) => {
 
 const step6Validation = async (req, res, next) => {
     const schema = Joi.object({
-        reasonToFind: Joi.string().required(),
+        reasonToFind: Joi.string().allow("",null),
     });
 
     const value = schema.validate(req.body);
@@ -161,9 +161,9 @@ const step6Validation = async (req, res, next) => {
 
 const step7Validation = async (req, res, next) => {
     const schema = Joi.object({
-        weight: Joi.string().required(),
-        breed: Joi.string().required(),
-        color: Joi.string().required(),
+        weight: Joi.string().allow("",null),
+        breed: Joi.string().allow("",null),
+        color: Joi.string().allow("",null),
     });
 
     const value = schema.validate(req.body);
@@ -179,10 +179,10 @@ const step7Validation = async (req, res, next) => {
 
 const step8Validation = async (req, res, next) => {
     const schema = Joi.object({
-        activityLevel: Joi.string().required(),
-        dietaryPreference: Joi.string().required(),
-        trainingBehaviour: Joi.string().required(),
-        outdoorHabits: Joi.string().required(),
+        activityLevel: Joi.string().allow("",null),
+        dietaryPreference: Joi.string().allow("",null),
+        trainingBehaviour: Joi.string().allow("",null),
+        outdoorHabits: Joi.string().allow("",null),
     });
 
     const value = schema.validate(req.body);
@@ -198,7 +198,7 @@ const step8Validation = async (req, res, next) => {
 
 const step9Validation = async (req, res, next) => {
     const schema = Joi.object({
-        petImages: Joi.array().items(Joi.string()).required(),
+        petImages: Joi.array().items(Joi.string()).allow("",null),
     });
 
     const value = schema.validate(req.body);

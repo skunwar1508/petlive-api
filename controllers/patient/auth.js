@@ -16,7 +16,7 @@ const signup = async (req, res) => {
         });
         if (existingUser) {
             if (!existingUser.isProfileCompleted) {
-                const otpCode = Math.floor(100000 + Math.random() * 9000); // 4-digit OTP
+                const otpCode = Math.floor(1000 + Math.random() * 9000); // 4-digit OTP
                 const newOtp = new otpModel({
                     otp: otpCode,
                     phone: requestData.phone,
@@ -40,7 +40,7 @@ const signup = async (req, res) => {
         });
 
         const user = await userData.save();
-        const otpCode = Math.floor(100000 + Math.random() * 9000); // 4-digit OTP
+        const otpCode = Math.floor(1000 + Math.random() * 9000); // 4-digit OTP
         const newOtp = new otpModel({
             otp: otpCode,
             phone: requestData.phone,
@@ -51,9 +51,9 @@ const signup = async (req, res) => {
 
         // Include OTP in the response if in development mode
         if (process.env.MODE === "development") {
-            user._doc.otp = otpCode;
+            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), otpCode);
         }
-        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), null);
     } catch (error) {
         console.log(error);
         return apiResponse.somethingWentWrongMsg(res);
@@ -101,7 +101,7 @@ const login = async (req, res) => {
         if (user.isActive === false) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userblocked"));
         }
-        const otpCode = Math.floor(100000 + Math.random() * 9000); // 4-digit OTP
+        const otpCode = Math.floor(1000 + Math.random() * 9000); // 4-digit OTP
         const newOtp = new otpModel({
             otp: otpCode,
             phone: requestData.phone,
@@ -111,11 +111,10 @@ const login = async (req, res) => {
         await newOtp.save();
         // Include OTP in the response if in development mode
         if (process.env.MODE === "development") {
-            user._doc.otp = otpCode;
+            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), otpCode);
         }
-        console.log(process.env.MODE, "otpCode", user);
 
-        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), null);
     } catch (error) {
         console.log(error);
         return apiResponse.somethingWentWrongMsg(res);
@@ -151,7 +150,7 @@ const verifyLoginOtp = async (req, res) => {
                 user._doc.token = token;
                 await otpModel.deleteOne({ _id: otp[0]._id });
 
-                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { data: user });
+                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
             } else {
                 return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
             }
@@ -224,7 +223,7 @@ const resendOtp = async (req, res) => {
         }
 
         // Generate a new OTP
-        const otpCode = Math.floor(100000 + Math.random() * 9000); // 4-digit OTP
+        const otpCode = Math.floor(1000 + Math.random() * 9000); // 4-digit OTP
         const newOtp = new otpModel({
             otp: otpCode,
             phone: phone,
