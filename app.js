@@ -26,6 +26,9 @@ mongoose.connect(process.env.MONGO_URI, {
     useUnifiedTopology: true,
 }).then(() => console.log("Connected to the database...")).catch((err) => console.log("Cannot connect to the database!!", err));
 
+const io = require("socket.io")(server);
+require("./socket.js")(io);
+
 // extra middle-wares
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
