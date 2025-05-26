@@ -14,6 +14,9 @@ router.post('/signup', validation.signUpStepValidation, authController.signup);
 router.post('/signup/verify', validation.signUpVerifyValidation, authController.verifySignUpOTP);
 router.post('/signup/resend', validation.signUpResendValidation, authController.resendOTP);
 router.get('/profile', verifyJWT, authController.getProfile);
+router.post('/pagination', verifyJWT, validation.paginValidation, authController.pagination);
+router.get('/details/:doctorId', verifyJWT, authController.getDoctorDetails);
+router.get('/status/:status/:doctorId', verifyJWT, authController.changeStatus);
 
 // router.post('/verifyOtp', validation.verifyOtpValidation, authController.verifyOtp);
 // router.post('/verifySignUpOTP', validation.verifyOtpSignupValidation, authController.verifySignUpOTP);

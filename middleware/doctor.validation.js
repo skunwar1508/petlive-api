@@ -176,6 +176,26 @@ const signUpStep7Validation = async (req, res, next) => {
     next();
 };
 
+const paginValidation = async (req, res, next) => {
+    const schema = Joi.object({
+        page: Joi.number().integer().min(1).default(1),
+        perPage: Joi.number().integer().min(1).max(100).default(10),
+        searchString: Joi.string().allow('').optional(),
+        sort: Joi.string().optional(),
+        order: Joi.string().valid('asc', 'desc').optional().default('asc')
+    });
+
+    const value = schema.validate(req.query);
+
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    
+    // Add validated and defaulted values to the request
+    req.pagination = value.value;
+    next();
+};
 // ==========================================================
 // ==========================================================
 
@@ -190,6 +210,7 @@ module.exports = {
     signUpStep4Validation,
     signUpStep5Validation,
     signUpStep6Validation,
-    signUpStep7Validation
+    signUpStep7Validation,
+    paginValidation
 };
 

@@ -15,14 +15,14 @@ const login = async (req, res) => {
             return apiResponse.validationErrorWithData(res, "Email and password are required");
         }
 
-        let doctor = await doctorModel.findOne({ email: requestData.email.toLowerCase(), isProfileCompleted:true, isDeleted: false });
+        let doctor = await doctorModel.findOne({ email: requestData.email.toLowerCase(), isProfileCompleted: true, isDeleted: false });
         if (!doctor) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         }
-        if(doctor.approveProfile === "rejected") {
+        if (doctor.approveProfile === "rejected") {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profileRejected"));
         }
-        if(doctor.approveProfile === "pending") {
+        if (doctor.approveProfile === "pending") {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profilePending"));
         }
 
@@ -55,13 +55,13 @@ const verifySignUpOTP = async (req, res) => {
         const requestData = req.body;
         if (requestData.email.toLowerCase()) {
             let otp = await otpModel.find({ email: requestData.email.toLowerCase(), usedFor: "SIGNUP" }).sort({ createdAt: -1 }).limit(1);
-            
+
             if (otp.length === 0) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
 
             if (otp[0].otp === requestData.otp) {
                 let doctor = await doctorModel.findOne({ email: requestData.email.toLowerCase(), isDeleted: false, approveProfile: { $ne: "rejected" } }).select("-password");
                 if (doctor.isProfileCompleted === true) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistemail"));
-                
+
                 console.log(doctor)
                 let payLoad = {
                     id: doctor._id,
@@ -132,7 +132,7 @@ const signup = async (req, res) => {
             // _id: { $ne: requestData.id },
             email: requestData.email.toLowerCase(),
             isDeleted: false,
-            approveProfile : { $ne: "rejected" }
+            approveProfile: { $ne: "rejected" }
         });
 
         if (existingDoctor) {
@@ -161,14 +161,14 @@ const signup = async (req, res) => {
             name: requestData.name,
             email: requestData.email.toLowerCase(),
             password: hashedPassword,
-            lastStep:1
+            lastStep: 1
         });
 
         doctorData.doctorId = generateDoctorId();
         const doctor = await doctorData.save();
 
-        
-         if (requestData.email.toLowerCase()) {
+
+        if (requestData.email.toLowerCase()) {
             let otpCode = Math.floor(100000 + Math.random() * 9000);
             let newOtp = new otpModel({
                 otp: otpCode,
@@ -186,7 +186,7 @@ const signup = async (req, res) => {
             }
         }
 
-        
+
     } catch (error) {
         console.log(error);
         return apiResponse.somethingWentWrongMsg(res);
@@ -207,7 +207,7 @@ const signupStep1 = async (req, res) => {
     // update profileImage
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted:false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.profileImage = requestData.profileImage;
         doctor.lastStep = 2;
@@ -226,7 +226,7 @@ const signupStep2 = async (req, res) => {
     // update gender
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted:false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.gender = requestData.gender;
         doctor.lastStep = 3;
@@ -335,6 +335,109 @@ const getProfile = async (req, res) => {
 };
 // ==========================================================================
 
+const pagination = async (req, res) => {
+    try {
+        const { page = 1, perPage = 10, searchString = "" } = req.body;
+        const pageNumber = parseInt(page);
+        const limit = parseInt(perPage);
+        const skip = (pageNumber - 1) * limit;
+
+        // Query filters
+        const filter = { isDeleted: false };
+        // If the user is a doctor, apply additional filters
+        if (req.doc && req.doc.role === roles.doctor) {
+            filter.isProfileCompleted = true;
+            filter.approveProfile = "approved";
+        }
+        // Add search functionality if searchString is provided
+        if (searchString) {
+            filter.$or = [
+                { name: { $regex: searchString, $options: 'i' } },
+                { email: { $regex: searchString, $options: 'i' } },
+                { doctorId: { $regex: searchString, $options: 'i' } },
+                { bio: { $regex: searchString, $options: 'i' } }
+            ];
+        }
+
+        // Total count for pagination
+        const totalDoctors = await doctorModel.countDocuments(filter);
+
+        // Get doctors with pagination
+        const doctors = await doctorModel.find(filter)
+            .select("-password")
+            .populate(["profileImage", "licenceImage"])
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 });
+
+
+        return apiResponse.successResWithPagination(res, CMS.Lang_Messages("en", "success"), doctors, totalDoctors);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const getDoctorDetails = async (req, res) => {
+    try {
+        // Check if user is admin
+        if (req.doc.role === roles.admin || req.doc.role === roles.patient) {
+
+            const doctorId = req.params.doctorId;
+
+            if (!doctorId) {
+                return apiResponse.validationErrorWithData(res, "Doctor ID is required");
+            }
+
+            let doctor = await doctorModel.findOne({
+                _id: doctorId,
+                isDeleted: false,
+            }).select("-password").populate(["profileImage", "licenceImage"]);
+
+            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+        } else {
+            return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "unauthorized_access"));
+        }
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+const changeStatus = async (req, res) => {
+    try {
+        // Only admin can change status
+        if (req.doc.role !== roles.admin) {
+            return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "unauthorized_access"));
+        }
+
+        const { status, doctorId } = req.params;
+
+        if (!doctorId) {
+            return apiResponse.validationErrorWithData(res, "Doctor ID is required");
+        }
+
+        // Validate status value
+        if (!['Pending', 'Approved', 'Rejected'].includes(status)) {
+            return apiResponse.validationErrorWithData(res, "Invalid status value. Status must be approved, pending, or rejected");
+        }
+
+        // Find and update the doctor
+        const doctor = await doctorModel.findOneAndUpdate(
+            { _id: doctorId, isDeleted: false },
+            { approveProfile: status },
+            { new: true }
+        ).select("-password");
+
+        if (!doctor) {
+            return apiResponse.errorMessage(res, 404, CMS.Lang_Messages("en", "usernotfound"));
+        }
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
 
 module.exports = {
     login,
@@ -348,5 +451,8 @@ module.exports = {
     signupStep5,
     signupStep6,
     signupStep7,
-    getProfile
+    getProfile,
+    pagination,
+    getDoctorDetails,
+    changeStatus
 };
