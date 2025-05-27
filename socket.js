@@ -5,6 +5,7 @@ const Message = require("./models/chat.model");
 const ChatRoom = require("./models/chatRoom.model");
 const ChatSession = require("./models/chatSession.model");
 const Pet = require("./models/patient.model");
+const Doctor = require('./models/doctor.model');
 
 const timers = new Map();
 
@@ -42,9 +43,13 @@ module.exports = function (io) {
 
     io.on("connection", (socket) => {
         socket.on("joinChat", async ({ id }) => {
+            if (!id) {
+                return socket.emit("chatError", "ID is required to join a chat");
+            }
+            
             const type = socket.doc.role;
             let con = {};
-
+            
             if (type === "patient") {
                 con.patientId = socket.doc.id;
                 con.doctorId = id;
@@ -55,6 +60,7 @@ module.exports = function (io) {
 
             let chatRoom = await ChatRoom.findOne(con);
             if (!chatRoom) {
+                console.log(con)
                 const totalRooms = await ChatRoom.countDocuments();
                 con.roomId = `ROOM-${totalRooms + 1}`;
                 chatRoom = new ChatRoom(con);
@@ -69,8 +75,16 @@ module.exports = function (io) {
 
             if (type === "patient") {
                 const pet = await Pet.findById(socket.doc.id);
-                console.log("Pet Wallet Balance:", socket.doc.id);
-                if (!pet || pet.walletBalance < 3) {
+                // Fetch doctor and consultation fee
+                const doctor = await Doctor.findById(con.doctorId);
+                if (!doctor) {
+                    return socket.emit("chatError", { message: "Doctor not found" });
+                }
+
+                // Get consultation fee per minute
+                const feePerMinute = doctor.consultationFee || 1;
+                const requiredBalance = feePerMinute * 3; // 3 minutes minimum
+                if (!pet || pet.walletBalance < requiredBalance) {
                     return socket.emit("chatError", { message: "Minimum 3-minute balance required" });
                 }
 
@@ -126,7 +140,7 @@ module.exports = function (io) {
             chatRoom.lastMessage = message;
             chatRoom.lastMessageAt = new Date();
             await chatRoom.save();
-
+ 
             io.to(user.room).emit("message", newMessage);
         });
 
@@ -155,9 +169,9 @@ module.exports = function (io) {
                 });
             }
 
+            io.to(user.room).emit("leftChat", { message: "Chat ended" });
             socket.leave(user.room);
             removeUser(socket.doc.id);
-            io.to(user.room).emit("leftChat", { message: "Chat ended" });
         });
 
         socket.on("disconnect", () => {

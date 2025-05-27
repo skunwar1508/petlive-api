@@ -439,6 +439,34 @@ const changeStatus = async (req, res) => {
     }
 };
 
+const consultationFeeUpdate = async (req, res) => {
+    try {
+        // Check if user is a doctor
+        if (req.doc.role !== roles.doctor) {
+            return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "unauthorized_access"));
+        }
+
+        const {consultationFee} = req.body;
+
+
+        // Find and update the doctor
+        const doctor = await doctorModel.findOneAndUpdate(
+            { _id: req.doc.id, isDeleted: false },
+            { consultationFee: consultationFee },
+            { new: true }
+        ).select("-password");
+
+        if (!doctor) {
+            return apiResponse.errorMessage(res, 404, CMS.Lang_Messages("en", "usernotfound"));
+        }
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
 module.exports = {
     login,
     signup,
@@ -454,5 +482,6 @@ module.exports = {
     getProfile,
     pagination,
     getDoctorDetails,
-    changeStatus
+    changeStatus,
+    consultationFeeUpdate
 };

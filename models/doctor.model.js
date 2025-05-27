@@ -75,6 +75,11 @@ const doctorSchema = new Schema({
         type: String, 
         default: null, 
     },
+    consultationFee : {
+        type: Number,
+        default: 0, // Default consultation fee
+        min: 0, // Ensure consultation fee is non-negative
+    },
     createdAt: {
         type: Date,
         default: Date.now,

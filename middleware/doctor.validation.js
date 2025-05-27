@@ -196,6 +196,20 @@ const paginValidation = async (req, res, next) => {
     req.pagination = value.value;
     next();
 };
+
+const consultationValidation = async (req, res, next) => {
+    const schema = Joi.object({
+        consultationFee: Joi.number().greater(0).required()
+    });
+
+    const value = schema.validate(req.body);
+
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    next();
+};
 // ==========================================================
 // ==========================================================
 
@@ -211,6 +225,7 @@ module.exports = {
     signUpStep5Validation,
     signUpStep6Validation,
     signUpStep7Validation,
-    paginValidation
+    paginValidation,
+    consultationValidation
 };
 
