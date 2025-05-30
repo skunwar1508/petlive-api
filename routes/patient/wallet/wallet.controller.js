@@ -34,18 +34,18 @@ const addWalletAmount = async (req, res) => {
         }
 
         // Calculate GST and total
-        const gstAmount = parseFloat((amount * 0.18).toFixed(2));
-        const totalAmountPaid = amount + gstAmount;
+        const gstAmount = parseFloat((Number(amount) * 0.18).toFixed(2));
+        const totalAmountPaid = Number(amount) + gstAmount;
 
         // Update wallet balance (only base amount gets credited)
-        patient.walletBalance += amount;
+        patient.walletBalance += Number(amount);
         await patient.save();
 
         
         // Create wallet transaction
         const transaction = new WalletTransaction({
             patientId,
-            amount,
+            amount:Number(amount),
             gstAmount,
             totalAmountPaid,
             paymentMethod: paymentMethod, // Assuming paymentMethod is passed in the request body
