@@ -1,10 +1,12 @@
 const express = require('express');
 
 const authController = require('../../controllers/doctor/auth');
+const { updateRecommended } = require('../../controllers/doctor/recommended');
 
 const validation = require('../../middleware/doctor.validation');
 const verifyJWT = require('../../utils/jwt');
 const signupStepRouter = require('./steps/steps.index.js');
+const { recommendedValidation } = require('../../validations/admin/admin.doctor');
 
 const router = express.Router();
 console.log("authController", authController);
@@ -18,6 +20,7 @@ router.post('/profile/consultation', verifyJWT, validation.consultationValidatio
 router.post('/pagination', verifyJWT, validation.paginValidation, authController.pagination);
 router.get('/details/:doctorId', verifyJWT, authController.getDoctorDetails);
 router.get('/status/:status/:doctorId', verifyJWT, authController.changeStatus);
+router.post('/recommended/update', verifyJWT, recommendedValidation, updateRecommended);
 
 // router.post('/verifyOtp', validation.verifyOtpValidation, authController.verifyOtp);
 // router.post('/verifySignUpOTP', validation.verifyOtpSignupValidation, authController.verifySignUpOTP);
