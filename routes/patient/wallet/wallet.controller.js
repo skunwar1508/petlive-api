@@ -58,14 +58,7 @@ const addWalletAmount = async (req, res) => {
 
         await transaction.save();
 
-        return res.status(200).json({
-            message: CMS.Lang_Messages("en", "wallet_amount_added"),
-            baseAmount: amount,
-            gstAmount,
-            totalAmountPaid,
-            newBalance: patient.walletBalance,
-            transaction
-        });
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), transaction);
     } catch (error) {
         console.error('Error adding wallet amount with GST:', error);
         return apiResponse.errorMessage(res, 500, CMS.Lang_Messages("en", "server_error"), error.message);
@@ -77,7 +70,7 @@ const getWalletTransactions = async (req, res) => {
         const patientId = req.doc.id;
         const transactions = await WalletTransaction.find({ patientId }).sort({ createdAt: -1 });
 
-        return res.status(200).json(transactions);
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), transactions);
     } catch (error) {
         console.error('Error fetching wallet transactions:', error);
         return apiResponse.errorMessage(res, 500, CMS.Lang_Messages("en", "server_error"), error.message);
