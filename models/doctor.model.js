@@ -52,6 +52,10 @@ const doctorSchema = new Schema({
         type: [String],
         default: [],
     },
+    recommended: {
+        type: Boolean,
+        default: false,
+    },
     bio: {
         type: String,
         trim: true,
