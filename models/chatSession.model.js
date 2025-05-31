@@ -1,11 +1,17 @@
 const mongoose = require('mongoose');
 
 const chatSessionSchema = new mongoose.Schema({
-    chatRoom: { type: mongoose.Schema.Types.ObjectId, ref: 'ChatRoom', required: true },
-    doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true },
-    patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'pet', required: true },
-    startedAt: { type: Date, required: true },
-    endedAt: { type: Date, required: true },
+    chatRoom: { type: mongoose.Schema.Types.ObjectId, ref: 'ChatRoom'},
+    doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' },
+    patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'pet' },
+    requestedAt: { type: Date, default: Date.now },
+    startedAt: { type: Date },
+    endedAt: { type: Date },
+    status: {
+        type: String,
+        enum: ['pending', 'accepted', 'rejected', 'started', 'ended'],
+        default: 'pending',
+    },
     totalMinutes: Number,
 }, { timestamps: true });
 
