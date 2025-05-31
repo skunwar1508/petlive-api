@@ -56,6 +56,10 @@ const doctorSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    isOnline: {
+        type: Boolean,
+        default: false,
+    },
     bio: {
         type: String,
         trim: true,

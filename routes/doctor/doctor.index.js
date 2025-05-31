@@ -1,12 +1,12 @@
 const express = require('express');
 
 const authController = require('../../controllers/doctor/auth');
-const { updateRecommended } = require('../../controllers/doctor/recommended');
+const { updateRecommended, updateOnlineStatus } = require('../../controllers/doctor/profile.controller.js');
 
 const validation = require('../../middleware/doctor.validation');
 const verifyJWT = require('../../utils/jwt');
 const signupStepRouter = require('./steps/steps.index.js');
-const { recommendedValidation } = require('../../validations/admin/admin.doctor');
+const { recommendedValidation, onlineStatusValidation } = require('../../validations/admin/admin.doctor');
 
 const router = express.Router();
 console.log("authController", authController);
@@ -21,6 +21,7 @@ router.post('/pagination', verifyJWT, validation.paginValidation, authController
 router.get('/details/:doctorId', verifyJWT, authController.getDoctorDetails);
 router.get('/status/:status/:doctorId', verifyJWT, authController.changeStatus);
 router.post('/recommended/update', verifyJWT, recommendedValidation, updateRecommended);
+router.post('/online/update/status', verifyJWT, onlineStatusValidation, updateOnlineStatus);
 
 // router.post('/verifyOtp', validation.verifyOtpValidation, authController.verifyOtp);
 // router.post('/verifySignUpOTP', validation.verifyOtpSignupValidation, authController.verifySignUpOTP);

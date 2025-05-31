@@ -26,7 +26,21 @@ const recommendedValidation = async (req, res, next) => {
     next();
 };
 
+const onlineStatusValidation = async (req, res, next) => {
+    const schema = Joi.object({
+        isOnline: Joi.boolean().required(),
+    });
+
+    const value = schema.validate(req.body);
+
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    next();
+};
 
 module.exports = {
     recommendedValidation,
+    onlineStatusValidation
 };
