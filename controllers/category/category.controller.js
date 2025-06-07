@@ -1,6 +1,7 @@
 const category = require('../../models/category.model');
 const roles = require('../../utils/roles');
-
+const CMS = require('../../common-modules/index');
+const apiResponse = require('../../utils/apiResponse');
 const categoryController = {
     async getAll(req, res) {
         try {
@@ -13,9 +14,9 @@ const categoryController = {
                 filter.status = true;
             }
             const categories = await category.find(filter);
-            res.status(200).json(categories);
+            return apiResponse.successResponse(res, categories);
         } catch (err) {
-            res.status(500).json({ message: err.message });
+            return apiResponse.errorMessage(res, 500, err.message);
         }
     },
 
@@ -29,29 +30,29 @@ const categoryController = {
                 filter.status = true;
             }
             const cat = await category.findOne(filter);
-            if (!cat) return res.status(404).json({ message: 'Category not found' });
-            res.status(200).json(cat);
+            if (!cat) return apiResponse.errorMessage(res, 404, CMS.Lang_Messages("en", "categorynotfound"));
+            return apiResponse.successResponse(res, cat);
         } catch (err) {
-            res.status(500).json({ message: err.message });
+            return apiResponse.errorMessage(res, 500, err.message);
         }
     },
 
     async create(req, res) {
         if (!req.doc || req.doc.role !== roles.admin) {
-            return res.status(403).json({ message: 'Access denied' });
+            return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "accessdenied"));
         }
         try {
             const newCategory = new category(req.body);
             const savedCategory = await newCategory.save();
-            res.status(201).json(savedCategory);
+            return apiResponse.successResponseWithData(res, "Category created", savedCategory);
         } catch (err) {
-            res.status(400).json({ message: err.message });
+            return apiResponse.errorMessage(res, 400, err.message);
         }
     },
 
     async update(req, res) {
         if (!req.doc || req.doc.role !== roles.admin) {
-            return res.status(403).json({ message: 'Access denied' });
+            return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "accessdenied"));
         }
         try {
             const updatedCategory = await category.findByIdAndUpdate(
@@ -59,23 +60,23 @@ const categoryController = {
                 req.body,
                 { new: true, runValidators: true }
             );
-            if (!updatedCategory) return res.status(404).json({ message: 'Category not found' });
-            res.status(200).json(updatedCategory);
+            if (!updatedCategory) return apiResponse.errorMessage(res, 404, CMS.Lang_Messages("en", "categorynotfound"));
+            return apiResponse.successResponseWithData(res, "Category updated", updatedCategory);
         } catch (err) {
-            res.status(400).json({ message: err.message });
+            return apiResponse.errorMessage(res, 400, err.message);
         }
     },
 
     async delete(req, res) {
         if (!req.doc || req.doc.role !== roles.admin) {
-            return res.status(403).json({ message: 'Access denied' });
+            return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "accessdenied"));
         }
         try {
             const deletedCategory = await category.findByIdAndDelete(req.params.id);
-            if (!deletedCategory) return res.status(404).json({ message: 'Category not found' });
-            res.status(200).json({ message: 'Category deleted successfully' });
+            if (!deletedCategory) return apiResponse.errorMessage(res, 404, CMS.Lang_Messages("en", "categorynotfound"));
+            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "categorydeleted"));
         } catch (err) {
-            res.status(500).json({ message: err.message });
+            return apiResponse.errorMessage(res, 500, err.message);
         }
     }
 };
