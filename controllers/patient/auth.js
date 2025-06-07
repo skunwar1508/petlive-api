@@ -435,7 +435,7 @@ const profileUpdate = async (req, res) => {
         if (updateData.dob !== undefined) user.dob = updateData.dob;
         if (updateData.petType !== undefined) user.petType = updateData.petType;
         if (updateData.gender !== undefined) user.gender = updateData.gender;
-        if (updateData.intrestFor !== undefined) user.intrestFor = updateData.intrestFor;
+        if (updateData.intrestFor !== undefined) user.interestFor = updateData.intrestFor;
         if (updateData.reasonToFind !== undefined) user.reasonToFind = updateData.reasonToFind;
         if (updateData.weight !== undefined) user.weight = updateData.weight;
         if (updateData.breed !== undefined) user.breed = updateData.breed;
