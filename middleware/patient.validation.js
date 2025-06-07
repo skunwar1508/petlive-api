@@ -145,7 +145,7 @@ const step5Validation = async (req, res, next) => {
 
 const step6Validation = async (req, res, next) => {
     const schema = Joi.object({
-        reasonToFind: Joi.string().allow("",null),
+        reasonToFind: Joi.array().items(Joi.string()),
     });
 
     const value = schema.validate(req.body);

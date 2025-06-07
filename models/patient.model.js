@@ -42,10 +42,10 @@ const petSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
-    reasonToFind: {
+    reasonToFind: [{
         type: String,
         trim: true,
-    },
+    }],
     weight: {
         type: Number,
     },
