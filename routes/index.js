@@ -9,4 +9,7 @@ const router = express.Router();
 router.use('/admin', adminRouter);
 router.use('/doctor', doctorRouter);
 router.use('/patient', patientRouter);
+
+router.use("/media", require("./media/media.download.route.js"));
+
 module.exports = router;
