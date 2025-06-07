@@ -12,5 +12,6 @@ router.use('/patient', patientRouter);
 
 router.use("/media", require("./media/media.download.route.js"));
 router.use("/category", require("./category/category.index.js"));
+router.use("/subcategory", require("./subcategory/subcategory.index.js"));
 
 module.exports = router;

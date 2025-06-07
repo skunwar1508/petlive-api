@@ -22,7 +22,7 @@ router.get(
 );
 
 router.get(
-    '/category/:id',
+    '/getById/:id',
     verifyJWT,
     getOneCategoryValidation,
     categoryController.getOne
@@ -36,14 +36,14 @@ router.post(
 );
 
 router.put(
-    '/category/:id',
+    '/update/:id',
     verifyJWT,
     updateCategoryValidation,
     categoryController.update
 );
 
 router.delete(
-    '/category/:id',
+    '/delete/:id',
     verifyJWT,
     deleteCategoryValidation,
     categoryController.delete
