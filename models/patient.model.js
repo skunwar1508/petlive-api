@@ -27,8 +27,8 @@ const petSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
-    dob: {
-        type: Date,
+    age: {
+        type: String,
     },
     petType: {
         type: String,

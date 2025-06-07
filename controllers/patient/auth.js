@@ -286,13 +286,13 @@ const signupStep2 = async (req, res) => {
 
 const signupStep3 = async (req, res) => {
     try {
-        const { name, dob } = req.body;
+        const { name, age } = req.body;
 
         let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         user.name = name;
-        user.dob = dob;
+        user.age = age;
         user.lastStep = 4;
         await user.save();
 

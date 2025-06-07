@@ -96,7 +96,7 @@ const step2Validation = async (req, res, next) => {
 const step3Validation = async (req, res, next) => {
     const schema = Joi.object({
         name: Joi.string().required(),
-        dob: Joi.string().required(),
+        age: Joi.string().required(),
     });
 
     const value = schema.validate(req.body);
