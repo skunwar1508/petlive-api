@@ -22,7 +22,18 @@ router.post('/', async (req, res) => {
     }
 })
 
+router.post('/multiple', async (req, res) => {
+    try {
+        console.log("uploading multiple files ======>>>", req.files);
+        let uploadData = req.files;
+        let docs = await CMS.Media_Center.uploadMediaMultipleFiles(uploadData);
 
+        return apiResponse.successResponse(res, "Uploaded", docs);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.errorMessage(res, 400, error);
+    }
+});
 
 module.exports = router;
 

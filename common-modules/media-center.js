@@ -92,6 +92,21 @@ async function uploadMediaFiles(file) {
 
     }
 }
+async function uploadMediaMultipleFiles(files) {
+    if (!Array.isArray(files)) {
+        throw new Error('Input must be an array of files');
+    }
+    const results = [];
+    for (const file of files) {
+        try {
+            const doc = await uploadMediaFiles(file);
+            results.push(doc);
+        } catch (error) {
+            results.push({ error: error.message, file: file.originalname });
+        }
+    }
+    return results;
+}
 
 async function deleteFileFromS3(key, imageId) {
     const params = {
@@ -224,7 +239,8 @@ module.exports = {
     getImageUrl,
     getImage,
     imageUpload,
-    deleteFileFromS3
+    deleteFileFromS3,
+    uploadMediaMultipleFiles
 }
 // Image upload api and function with whether s3 or normal file upload
 // if you will do by s3 use the fucntion of above for tinfy the

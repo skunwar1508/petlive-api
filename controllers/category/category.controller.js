@@ -14,7 +14,7 @@ const categoryController = {
                 filter.status = true;
             }
             const categories = await category.find(filter);
-            return apiResponse.successResponse(res, categories);
+            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), categories);
         } catch (err) {
             return apiResponse.errorMessage(res, 500, err.message);
         }

@@ -7,6 +7,7 @@ const upload = multer()
 
 router.get("/download/:id", verifyJWT, getImageById);
 router.use("/upload", upload.single('coverImage'), require("../../utils/upload.js"));
+router.use("/upload/multiple", upload.single('coverImage'), require("../../utils/upload.js"));
 
 module.exports = router;
 
