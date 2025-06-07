@@ -20,9 +20,9 @@ const petSchema = new mongoose.Schema({
     ownerDob: {
         type: Date,
     },
-    ownerImage: {
-        type: String,
-    },
+    ownerImage: [{
+         type: mongoose.Schema.Types.ObjectId, ref: 'Image'
+    }],
     name: {
         type: String,
         trim: true,

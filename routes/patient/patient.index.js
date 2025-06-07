@@ -15,6 +15,7 @@ router.post('/signup', patientValidation.signUpValidation, authController.signup
 router.post('/signup/verify', patientValidation.verifyOtpValidation,  authController.verifyOtp);
 router.post('/signup/resend', patientValidation.resendValidation, authController.resendOtp);
 router.get('/profile', verifyJWT, authController.getProfile);
+router.post('/profile/update', verifyJWT, patientValidation.fullProfileValidation, authController.profileUpdate);
 router.post('/addWallet', verifyJWT, wallet.addWalletAmount);
 router.get('/transactions', verifyJWT, wallet.getWalletTransactions);
 // router.post('/verifyOtp', validation.verifyOtpValidation, authController.verifyOtp);
@@ -24,5 +25,6 @@ router.get('/transactions', verifyJWT, wallet.getWalletTransactions);
 // router.get('/refreshToken', verifyJWT, authController.refreshToken);
 
 router.use('/signup/steps', verifyJWT, signupStepRouter);
+// router.use('/', verifyJWT, signupStepRouter);
 
 module.exports = router;

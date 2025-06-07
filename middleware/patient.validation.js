@@ -79,7 +79,7 @@ const step2Validation = async (req, res, next) => {
         ownerName: Joi.string().required(),
         ownerGender: Joi.string().required(),
         ownerDob: Joi.string().required(),
-        ownerImage: Joi.string().required(),
+        ownerImage: Joi.array().items(Joi.string()).min(1).required(),
     });
 
     const value = schema.validate(req.body);
@@ -209,6 +209,37 @@ const step9Validation = async (req, res, next) => {
     }
     next();
 };
+const fullProfileValidation = async (req, res, next) => {
+    const schema = Joi.object({
+        email: Joi.string().email().required(),
+        ownerName: Joi.string().required(),
+        ownerGender: Joi.string().valid("male", "female", "other").required(),
+        ownerDob: Joi.string().required(),
+        ownerImage: Joi.string().required(),
+        name: Joi.string().required(),
+        dob: Joi.string().required(),
+        petType: Joi.string().required(),
+        gender: Joi.string().valid("male", "female", "other").required(),
+        intrestFor: Joi.string().allow("", null),
+        reasonToFind: Joi.string().allow("", null),
+        weight: Joi.string().allow("", null),
+        breed: Joi.string().allow("", null),
+        color: Joi.string().allow("", null),
+        activityLevel: Joi.string().allow("", null),
+        dietaryPreference: Joi.string().allow("", null),
+        trainingBehaviour: Joi.string().allow("", null),
+        outdoorHabits: Joi.string().allow("", null),
+        petImages: Joi.array().items(Joi.string()).allow("", null),
+    });
+
+    const value = schema.validate(req.body);
+
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    next();
+};
 
 // ==========================================================
 
@@ -225,4 +256,5 @@ module.exports = {
     step7Validation,
     step8Validation,
     step9Validation,
+    fullProfileValidation
 };

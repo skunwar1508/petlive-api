@@ -5,6 +5,7 @@ const patientModel = require("../../models/patient.model.js");
 const roles = require("../../utils/roles.js");
 const apiResponse = require("../../utils/apiResponse.js");
 const bcrypt = require("bcrypt");
+const Joi = require("joi");
 
 const signup = async (req, res) => {
     try {
@@ -269,7 +270,6 @@ const signupStep2 = async (req, res) => {
 
         let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
-
         user.ownerName = ownerName;
         user.ownerGender = ownerGender;
         user.ownerDob = ownerDob;
@@ -418,6 +418,42 @@ const signupStep9 = async (req, res) => {
     }
 };
 
+const profileUpdate = async (req, res) => {
+    try {
+        const updateData = req.body;
+
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
+        if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+
+        // Update fields explicitly
+        if (updateData.email !== undefined) user.email = updateData.email;
+        if (updateData.ownerName !== undefined) user.ownerName = updateData.ownerName;
+        if (updateData.ownerGender !== undefined) user.ownerGender = updateData.ownerGender;
+        if (updateData.ownerDob !== undefined) user.ownerDob = updateData.ownerDob;
+        if (updateData.ownerImage !== undefined) user.ownerImage = updateData.ownerImage;
+        if (updateData.name !== undefined) user.name = updateData.name;
+        if (updateData.dob !== undefined) user.dob = updateData.dob;
+        if (updateData.petType !== undefined) user.petType = updateData.petType;
+        if (updateData.gender !== undefined) user.gender = updateData.gender;
+        if (updateData.intrestFor !== undefined) user.intrestFor = updateData.intrestFor;
+        if (updateData.reasonToFind !== undefined) user.reasonToFind = updateData.reasonToFind;
+        if (updateData.weight !== undefined) user.weight = updateData.weight;
+        if (updateData.breed !== undefined) user.breed = updateData.breed;
+        if (updateData.color !== undefined) user.color = updateData.color;
+        if (updateData.activityLevel !== undefined) user.activityLevel = updateData.activityLevel;
+        if (updateData.dietaryPreference !== undefined) user.dietaryPreference = updateData.dietaryPreference;
+        if (updateData.trainingBehaviour !== undefined) user.trainingBehaviour = updateData.trainingBehaviour;
+        if (updateData.outdoorHabits !== undefined) user.outdoorHabits = updateData.outdoorHabits;
+        if (updateData.petImages !== undefined) user.petImages = updateData.petImages;
+
+        await user.save();
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
 module.exports = {
     signup,
     signupStep1,
@@ -435,4 +471,5 @@ module.exports = {
     verifyLoginOtp,
     verifyOtp,
     resendOtp,
+    profileUpdate
 };
