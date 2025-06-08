@@ -29,7 +29,10 @@ const signup = async (req, res) => {
                     existingUser._doc.otp = otpCode;
                 }
 
-                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "otpsentphone"), existingUser);
+                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "otpsentphone"), {
+                    otpCode,
+                    lastStep: existingUser.lastStep,
+                }, existingUser);
             }
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistswithcreds"));
         }
@@ -52,7 +55,7 @@ const signup = async (req, res) => {
 
         // Include OTP in the response if in development mode
         if (process.env.MODE === "development") {
-            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), otpCode);
+            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { otpCode: otpCode });
         }
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), null);
     } catch (error) {
