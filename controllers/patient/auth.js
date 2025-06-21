@@ -16,34 +16,35 @@ const signup = async (req, res) => {
             isDeleted: false,
         });
         if (existingUser) {
-            if (!existingUser.isProfileCompleted) {
-                const otpCode = Math.floor(1000 + Math.random() * 9000); // 4-digit OTP
-                const newOtp = new otpModel({
-                    otp: otpCode,
-                    phone: requestData.phone,
-                    usedFor: "SIGNUP",
-                });
-
-                await newOtp.save();
-                if (process.env.MODE === "development") {
-                    existingUser._doc.otp = otpCode;
-                }
-
-                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "otpsentphone"), {
-                    otpCode,
-                    lastStep: existingUser.lastStep,
-                }, existingUser);
-            }
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistswithcreds"));
+            // if (!existingUser.isProfileCompleted) {
+            //     const otpCode = Math.floor(1000 + Math.random() * 9000); // 4-digit OTP
+            //     const newOtp = new otpModel({
+            //         otp: otpCode,
+            //         phone: requestData.phone,
+            //         usedFor: "SIGNUP",
+            //     });
+
+            //     await newOtp.save();
+            //     if (process.env.MODE === "development") {
+            //         existingUser._doc.otp = otpCode;
+            //     }
+
+            //     return apiResponse.successResponse(res, CMS.Lang_Messages("en", "otpsentphone"), {
+            //         otpCode,
+            //         lastStep: existingUser.lastStep,
+            //     }, existingUser);
+            // }
+            // return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistswithcreds"));
         }
 
-        let userData = new patientModel({
-            phone: requestData.phone,
-            isAccept: requestData.isAccept,
-            lastStep: 1,
-        });
+        // let userData = new patientModel({
+        //     phone: requestData.phone,
+        //     isAccept: requestData.isAccept,
+        //     lastStep: 1,
+        // });
 
-        const user = await userData.save();
+        // const user = await userData.save();
         const otpCode = Math.floor(1000 + Math.random() * 9000); // 4-digit OTP
         const newOtp = new otpModel({
             otp: otpCode,
@@ -99,9 +100,9 @@ const login = async (req, res) => {
         if (!user || user.isDeleted === true) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         }
-        if (user.isProfileCompleted === false) {
-            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { isProfileCompleted: user.isProfileCompleted });
-        }
+        // if (user.isProfileCompleted === false) {
+        //     return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { isProfileCompleted: user.isProfileCompleted });
+        // }
         if (user.isActive === false) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userblocked"));
         }
@@ -153,6 +154,10 @@ const verifyLoginOtp = async (req, res) => {
 
                 user._doc.token = token;
                 await otpModel.deleteOne({ _id: otp[0]._id });
+                
+                // if (user.isProfileCompleted === false) {
+                //     return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+                // }
 
                 return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
             } else {
@@ -178,18 +183,24 @@ const verifyOtp = async (req, res) => {
             }
 
             if (otp[0].otp === requestData.otp) {
-                let user = await patientModel.findOne({ phone: requestData.phone, isDeleted: false }).select("-password");
+                // let user = await patientModel.findOne({ phone: requestData.phone, isDeleted: false }).select("-password");
 
-                if (!user) {
-                    return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
-                }
+                // if (!user) {
+                //     return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+                // }
 
-                if (user.isProfileCompleted === true) {
-                    return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
-                }
+                // if (user.isProfileCompleted === true) {
+                //     return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+                // }
+                let userData = new patientModel({
+                    phone: requestData.phone,
+                    isAccept: requestData.isAccept,
+                    lastStep: 1,
+                });
 
+                const saveUser = await userData.save();
                 let payLoad = {
-                    id: user._id,
+                    id: userData._id,
                     role: roles.patient,
                 };
 
@@ -197,10 +208,10 @@ const verifyOtp = async (req, res) => {
                     expiresIn: "24h", // expires in 1 Day
                 });
 
-                user._doc.token = token;
+                userData._doc.token = token;
                 await otpModel.deleteOne({ _id: otp[0]._id });
 
-                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { data: user });
+                return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), userData);
             } else {
                 return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
             }
@@ -351,6 +362,7 @@ const signupStep6 = async (req, res) => {
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         user.reasonToFind = reasonToFind;
+        user.isProfileCompleted = true
         user.lastStep = 7;
         await user.save();
 
