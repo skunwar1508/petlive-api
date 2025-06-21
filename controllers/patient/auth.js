@@ -377,7 +377,7 @@ const signupStep7 = async (req, res) => {
     try {
         const { weight, breed, color } = req.body;
 
-        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         user.weight = weight;
@@ -397,7 +397,7 @@ const signupStep8 = async (req, res) => {
     try {
         const { activityLevel, dietaryPreference, trainingBehaviour, outdoorHabits } = req.body;
 
-        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         user.activityLevel = activityLevel;
@@ -418,7 +418,7 @@ const signupStep9 = async (req, res) => {
     try {
         const { petImages } = req.body;
 
-        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         user.petImages = petImages;
