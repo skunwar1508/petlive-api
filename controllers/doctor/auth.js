@@ -312,8 +312,24 @@ const signupStep7 = async (req, res) => {
         let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.bio = requestData.bio;
-        doctor.isProfileCompleted = true;
         doctor.lastStep = 8;
+        await doctor.save();
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const signupStep8 = async (req, res) => {
+    // update services
+    try {
+        const requestData = req.body;
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        doctor.services = requestData.services; // expects array or object of services
+        doctor.isProfileCompleted = true;
+        doctor.lastStep = 10;
         await doctor.save();
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
     } catch (error) {
@@ -479,6 +495,7 @@ module.exports = {
     signupStep5,
     signupStep6,
     signupStep7,
+    signupStep8,
     getProfile,
     pagination,
     getDoctorDetails,

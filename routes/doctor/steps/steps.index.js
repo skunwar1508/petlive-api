@@ -14,5 +14,6 @@ router.post('/4', validation.signUpStep4Validation, authController.signupStep4);
 router.post('/5', validation.signUpStep5Validation, authController.signupStep5);
 router.post('/6', validation.signUpStep6Validation, authController.signupStep6);
 router.post('/7', validation.signUpStep7Validation, authController.signupStep7);
+router.post('/8', validation.signUpStep8Validation, authController.signupStep8);
 
 module.exports = router;

@@ -175,6 +175,17 @@ const signUpStep7Validation = async (req, res, next) => {
     }
     next();
 };
+const signUpStep8Validation = async (req, res, next) => {
+    const schema = Joi.object({
+        services: Joi.array().items(Joi.string()).required(), // expects array or object of services
+    });
+    const value = schema.validate(req.body);
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    next();
+};
 
 const paginValidation = async (req, res, next) => {
     const schema = Joi.object({
@@ -225,6 +236,7 @@ module.exports = {
     signUpStep5Validation,
     signUpStep6Validation,
     signUpStep7Validation,
+    signUpStep8Validation,
     paginValidation,
     consultationValidation
 };

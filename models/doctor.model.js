@@ -40,6 +40,10 @@ const doctorSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Image', // Reference the Image model
     },
+    services: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Service', // Reference the Service model
+    }],
     animalPreference: {
         type: [String],
         default: [],
