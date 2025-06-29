@@ -14,5 +14,6 @@ router.use("/media", require("./media/media.download.route.js"));
 router.use("/category", require("./category/category.index.js"));
 router.use("/subcategory", require("./subcategory/subcategory.index.js"));
 router.use("/breadColor", require("./breadColor/breadColor.index.js"));
+router.use("/services", require("./services/services.routes.js"));
 
 module.exports = router;
