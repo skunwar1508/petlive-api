@@ -6,6 +6,7 @@ const ChatRoom = require("./models/chatRoom.model");
 const ChatSession = require("./models/chatSession.model");
 const Pet = require("./models/patient.model");
 const Doctor = require('./models/doctor.model');
+const Service = require('./models/service.model');
 
 const timers = new Map();
 
@@ -45,46 +46,74 @@ module.exports = function (io) {
 
         // Patient initiates chat request
         // Patient initiates chat request
-        socket.on("chatRequest", async ({ doctorId }) => {
+        // Patient initiates chat request for a service
+        socket.on("chatRequest", async ({ serviceId }) => {
             if (socket.doc.role !== "patient") {
                 return socket.emit("chatError", "Only patients can request chat");
             }
-            if (!doctorId) {
-                return socket.emit("chatError", "Doctor ID is required");
+            if (!serviceId) {
+                return socket.emit("chatError", "Service ID is required");
             }
 
-            // Check if doctor exists
-            const doctor = await Doctor.findById(doctorId);
-            if (!doctor) {
-                return socket.emit("chatError", "Doctor not found");
+            // Get patient and check wallet balance
+            const pet = await Pet.findById(socket.doc.id);
+            if (!pet) {
+                return socket.emit("chatError", "Patient not found");
             }
 
-            // Save chat request in a separate collection
+            // Find doctors who provide this service (limit 10 random)
+            const doctors = await Doctor.aggregate([
+                { $match: { services: serviceId } },
+                { $sample: { size: 10 } }
+            ]);
+            if (!doctors.length) {
+                return socket.emit("chatError", "No doctors available for this service");
+            }
+
+            // Get consultation fee from Service collection
+            const service = await Service.findById(serviceId);
+            if (!service || typeof service.price !== "number") {
+                return socket.emit("chatError", "Service or consultation fee not found");
+            }
+            const servicePrice = service.price;
+
+            if (pet.walletBalance < servicePrice) {
+                return socket.emit("chatError", { message: "Insufficient balance for this service" });
+            }
+
+            // Save chat request with status pending, and list of doctorIds
             let chatRequest = await ChatSession.create({
-                doctorId,
+                serviceId,
+                doctorIds: doctors.map(d => d._id),
                 patientId: socket.doc.id,
                 status: "pending",
                 requestedAt: new Date(),
+                servicePrice
             });
+            console.log("Chat request created:", chatRequest);
 
-            // Notify doctor of chat request
-            io.emit(`chatRequest:${doctorId}`, {
-                patientId: socket.doc.id,
-                patientSocketId: socket.id,
-                doctorId,
-                chatRequestId: chatRequest._id,
-            });
+            // Notify all 10 doctors of chat request
+            for (const doc of doctors) {
+                io.emit(`chatRequest:${doc._id}`, {
+                    patientId: socket.doc.id,
+                    patientSocketId: socket.id,
+                    doctorId: doc._id,
+                    chatRequestId: chatRequest._id,
+                    serviceId,
+                    servicePrice
+                });
+            }
 
-            socket.emit("chatRequestSent", { doctorId, chatRequestId: chatRequest._id });
+            socket.emit("chatRequestSent", { doctorIds: doctors.map(d => d._id), chatRequestId: chatRequest._id, servicePrice });
         });
 
-        // Doctor accepts chat request (but does not join chat yet)
-        socket.on("acceptChatRequest", async ({ patientId, chatRequestId }) => {
+        // Doctor accepts chat request (only one doctor can accept)
+        socket.on("acceptChatRequest", async ({ chatRequestId }) => {
             if (socket.doc.role !== "doctor") {
                 return socket.emit("chatError", "Only doctors can accept chat requests");
             }
-            if (!patientId || !chatRequestId) {
-                return socket.emit("chatError", "Patient ID and chatRequestId are required");
+            if (!chatRequestId) {
+                return socket.emit("chatError", "chatRequestId is required");
             }
 
             // Find the chat request and check status
@@ -93,37 +122,78 @@ module.exports = function (io) {
                 return socket.emit("chatError", "Chat request not found");
             }
             if (chatRequest.status !== "pending") {
-                return socket.emit("chatError", "Only pending requests can be accepted");
+                return socket.emit("chatError", "Request already accepted or rejected");
+            }
+            // Check if doctor is in the allowed list
+            if (!chatRequest.doctorIds.map(id => id.toString()).includes(socket.doc.id.toString())) {
+                return socket.emit("chatError", "You are not eligible for this request");
             }
 
-            // Update chat request status
-            await ChatSession.findByIdAndUpdate(chatRequestId, { status: "accepted", acceptedAt: new Date() });
-
-            // Find or create chat room
-            let con = { patientId, doctorId: socket.doc.id };
-            let chatRoom = await ChatRoom.findOne(con);
-            if (!chatRoom) {
-                const totalRooms = await ChatRoom.countDocuments();
-                con.roomId = `ROOM-${totalRooms + 1}`;
-                chatRoom = new ChatRoom(con);
-                await chatRoom.save();
+            // Check patient wallet balance again before accept
+            const pet = await Pet.findById(chatRequest.patientId);
+            if (!pet || pet.walletBalance < chatRequest.servicePrice) {
+                return socket.emit("chatError", { message: "Patient has insufficient balance" });
             }
 
-            // Do NOT join doctor to room here
+            // Atomically update status to accepted if still pending
+            const updated = await ChatSession.findOneAndUpdate(
+                { _id: chatRequestId, status: "pending" },
+                {
+                    status: "accepted",
+                    acceptedAt: new Date(),
+                    doctorId: socket.doc.id
+                },
+                { new: true }
+            );
+            if (!updated || updated.status !== "accepted") {
+                return socket.emit("chatError", "Request already accepted by another doctor");
+            }
 
-            // Notify patient to join chat
-            io.emit(`chatAccepted:${patientId}`, { chatRoomId: chatRoom._id, doctorId: socket.doc.id, chatRequestId });
+            // Deduct amount from patient wallet
+            pet.walletBalance -= chatRequest.servicePrice;
+            await pet.save();
+
+            // Create chat room
+            const totalRooms = await ChatRoom.countDocuments();
+            const roomId = `ROOM-${totalRooms + 1}`;
+            const chatRoom = new ChatRoom({
+                patientId: chatRequest.patientId,
+                doctorId: socket.doc.id,
+                serviceId: chatRequest.serviceId,
+                roomId
+            });
+            await chatRoom.save();
+
+            // Link chatRoom to session
+            updated.chatRoom = chatRoom._id;
+            await updated.save();
+
+            // Notify patient with doctor info and chatRoomId
+            const doctorInfo = await Doctor.findById(socket.doc.id).select("-password");
+            io.emit(`chatAccepted:${chatRequest.patientId}`, {
+                chatRoomId: chatRoom._id,
+                doctorId: socket.doc.id,
+                chatRequestId,
+                doctor: doctorInfo
+            });
 
             socket.emit("chatAccepted", { chatRoomId: chatRoom._id, chatRequestId });
+
+            // Notify other doctors that request is no longer available
+            for (const docId of chatRequest.doctorIds) {
+                if (docId.toString() !== socket.doc.id.toString()) {
+                    io.emit(`chatRequestClosed:${docId}`, { chatRequestId });
+                }
+            }
         });
 
-        // Doctor rejects chat request
-        socket.on("rejectChatRequest", async ({ patientId, chatRequestId }) => {
+        // Doctor rejects chat request (others can still accept)
+        socket.on("rejectChatRequest", async ({ chatRequestId }) => {
             if (socket.doc.role !== "doctor") {
                 return socket.emit("chatError", "Only doctors can reject chat requests");
             }
-            if (!patientId || !chatRequestId) {
-                return socket.emit("chatError", "Patient ID and chatRequestId are required");
+            if (!chatRequestId) {
+                return socket.emit("chatError", "chatRequestId is required");
             }
 
             // Find the chat request and check status
@@ -132,14 +202,22 @@ module.exports = function (io) {
                 return socket.emit("chatError", "Chat request not found");
             }
             if (chatRequest.status !== "pending") {
-                return socket.emit("chatError", "Only pending requests can be rejected");
+                return socket.emit("chatError", "Request already accepted or rejected");
             }
 
-            // Update chat request status
-            await ChatSession.findByIdAndUpdate(chatRequestId, { status: "rejected", rejectedAt: new Date() });
+            // Remove doctor from eligible list
+            await ChatSession.findByIdAndUpdate(chatRequestId, {
+                $pull: { doctorIds: socket.doc.id }
+            });
 
-            // Notify patient of rejection
-            io.emit(`chatRejected:${patientId}`, { doctorId: socket.doc.id, chatRequestId });
+            // Notify patient if no more doctors left
+            const updated = await ChatSession.findById(chatRequestId);
+            if (updated.doctorIds.length === 0 && updated.status === "pending") {
+                updated.status = "rejected";
+                updated.rejectedAt = new Date();
+                await updated.save();
+                io.emit(`chatRejected:${updated.patientId}`, { chatRequestId });
+            }
         });
 
         // Patient or doctor joins chat after acceptance
@@ -154,15 +232,15 @@ module.exports = function (io) {
                 return socket.emit("chatError", "Chat Room Not Found");
             }
 
-            // If doctor, check if request status is accepted
-            if (type === "doctor") {
-                if (!chatRequestId) {
-                    return socket.emit("chatError", "Chat Request ID is required");
-                }
-                const chatRequest = await ChatSession.findById(chatRequestId);
-                if (!chatRequest || chatRequest.status !== "accepted") {
-                    return socket.emit("chatError", "Chat request is not accepted");
-                }
+            // Only allow join if chat session is accepted
+            const chatRequest = await ChatSession.findOne({ _id: chatRequestId, chatRoom: chatRoomId });
+            if (!chatRequest || chatRequest.status !== "accepted") {
+                return socket.emit("chatError", "Chat is not available to join");
+            }
+
+            // Prevent join if chat ended
+            if (chatRequest.status === "ended") {
+                return socket.emit("chatError", "Chat has ended");
             }
 
             const user = userJoin(socket.id, socket.doc.id, chatRoom._id.toString());
@@ -170,74 +248,6 @@ module.exports = function (io) {
 
             socket.join(user.room);
             console.log(`${socket.doc.id} joined chat ${user.room}`);
-
-            if (type === "patient") {
-                const pet = await Pet.findById(socket.doc.id);
-                const doctor = await Doctor.findById(chatRoom.doctorId);
-                if (!doctor) {
-                    return socket.emit("chatError", { message: "Doctor not found" });
-                }
-
-                const feePerMinute = doctor.consultationFee || 1;
-                const requiredBalance = feePerMinute * 3; // 3 minutes minimum
-                if (!pet || pet.walletBalance < requiredBalance) {
-                    return socket.emit("chatError", { message: "Minimum 3-minute balance required" });
-                }
-
-                // Deduct initial 3 minutes
-                pet.walletBalance -= requiredBalance;
-                await pet.save();
-
-                // Start chat session and deduction interval
-                const sessionStart = new Date();
-                socket.sessionStart = sessionStart;
-
-                // Update chat request status to started
-                if (chatRequestId) {
-                    await ChatSession.findByIdAndUpdate(chatRequestId, { status: "started", startedAt: sessionStart });
-                }
-
-                const interval = setInterval(async () => {
-                    const current = await Pet.findById(socket.doc.id);
-                    if (!current || current.walletBalance < feePerMinute) {
-                        clearInterval(interval);
-                        io.to(user.room).emit("chatEnded", { reason: "Wallet balance exhausted" });
-                        // Update chat session as ended
-                        if (chatRequestId) {
-                            const sessionEnd = new Date();
-                            const duration = Math.ceil((sessionEnd - socket.sessionStart) / 60000);
-                            await ChatSession.findByIdAndUpdate(chatRequestId, {
-                                status: "ended",
-                                endedAt: sessionEnd,
-                                totalMinutes: duration,
-                                totalAmount: duration * feePerMinute,
-                            });
-                        }
-                        return;
-                    }
-                    current.walletBalance -= feePerMinute;
-                    await current.save();
-                    io.to(user.room).emit("walletUpdate", { walletBalance: current.walletBalance });
-
-                    if (current.walletBalance < feePerMinute) {
-                        clearInterval(interval);
-                        io.to(user.room).emit("chatEnded", { reason: "Wallet balance exhausted" });
-                        // Update chat session as ended
-                        if (chatRequestId) {
-                            const sessionEnd = new Date();
-                            const duration = Math.ceil((sessionEnd - socket.sessionStart) / 60000);
-                            await ChatSession.findByIdAndUpdate(chatRequestId, {
-                                status: "ended",
-                                endedAt: sessionEnd,
-                                totalMinutes: duration,
-                                totalAmount: duration * feePerMinute,
-                            });
-                        }
-                    }
-                }, 60000);
-
-                timers.set(user.room, interval);
-            }
 
             io.to(user.id).emit("recentMessages", { data: chatRoom, messages: "successfully joined" });
         });
@@ -250,88 +260,57 @@ module.exports = function (io) {
             const chatRoom = await ChatRoom.findById(user.room);
             if (!chatRoom) return;
 
-            // If doctor, check if chat session status is "started"
-            if (socket.doc.role === "doctor") {
-                // Find the latest chat session for this room
-                const session = await ChatSession.findOne({
-                    chatRoom: chatRoom._id,
-                    doctorId: chatRoom.doctorId,
-                    patientId: chatRoom.patientId,
-                }).sort({ startedAt: -1 });
+            // Find the chat session for this room
+            const session = await ChatSession.findOne({
+                chatRoom: chatRoom._id,
+                doctorId: chatRoom.doctorId,
+                patientId: chatRoom.patientId,
+                status: "accepted"
+            });
 
-                if (!session || session.status !== "started") {
-                    return socket.emit("chatError", "Doctor can only leave if chat is started");
-                }
+            if (!session) {
+                return socket.emit("chatError", "No active chat session found");
             }
 
-            const interval = timers.get(user.room);
-            if (interval) clearInterval(interval);
-            timers.delete(user.room);
-
-            if (socket.sessionStart) {
-                const sessionEnd = new Date();
-                const duration = Math.ceil((sessionEnd - socket.sessionStart) / 60000);
-
-                // Find the latest chat session for this room and update
-                const session = await ChatSession.findOne({
-                    chatRoom: chatRoom._id,
-                    doctorId: chatRoom.doctorId,
-                    patientId: chatRoom.patientId,
-                }).sort({ startedAt: -1 });
-
-                let feePerMinute = 1;
-                const doctor = await Doctor.findById(chatRoom.doctorId);
-                if (doctor && doctor.consultationFee) {
-                    feePerMinute = doctor.consultationFee;
-                }
-
-                if (session) {
-                    session.endedAt = sessionEnd;
-                    session.totalMinutes = duration;
-                    session.totalAmount = duration * feePerMinute;
-                    session.status = "ended";
-                    await session.save();
-                } else {
-                    await ChatSession.create({
-                        chatRoom: chatRoom._id,
-                        doctorId: chatRoom.doctorId,
-                        patientId: chatRoom.patientId,
-                        startedAt: socket.sessionStart,
-                        endedAt: sessionEnd,
-                        totalMinutes: duration,
-                        totalAmount: duration * feePerMinute,
-                        status: "ended",
-                    });
-                }
+            // Only doctor can end the chat
+            if (socket.doc.role !== "doctor") {
+                return socket.emit("chatError", "Only doctor can end the chat");
             }
+
+            // Mark session as ended
+            session.status = "ended";
+            session.endedAt = new Date();
+            await session.save();
 
             io.to(user.room).emit("leftChat", { message: "Chat ended" });
             socket.leave(user.room);
             removeUser(socket.doc.id);
 
-            // If patient leaves, also disconnect doctor from the room
-            if (socket.doc.role === "patient" || socket.doc.role === "doctor") {
-                // Find all sockets in the room
-                const socketsInRoom = await io.in(user.room).fetchSockets();
-                for (const s of socketsInRoom) {
-                    if (
-                        (socket.doc.role === "patient" && s.doc && s.doc.role === "doctor") ||
-                        (socket.doc.role === "doctor" && s.doc && s.doc.role === "patient")
-                    ) {
-                        s.leave(user.room);
-                        removeUser(s.doc.id);
-                        s.emit("leftChat", { message: `Chat ended by ${socket.doc.role}` });
-                    }
-                }
+            // Disconnect all sockets in the room
+            const socketsInRoom = await io.in(user.room).fetchSockets();
+            for (const s of socketsInRoom) {
+                s.leave(user.room);
+                removeUser(s.doc.id);
+                s.emit("leftChat", { message: `Chat ended by doctor` });
             }
         });
 
-        socket.on("chatMessage", async ({ message }) => {
+        // Only allow chat messages if chat is not ended
+        socket.on("chatMessage", async ({ message, chatRequestId }) => {
             const user = getCurrentUser(socket.id);
             if (!user) return socket.emit("chatError", "Authorization Failed");
 
             const chatRoom = await ChatRoom.findById(user.room);
             if (!chatRoom) return socket.emit("chatError", "Chat Room Not Found");
+
+            // Check if chat session is still active
+            const session = await ChatSession.findOne({
+                chatRoom: chatRoom._id,
+                status: { $ne: "ended" }
+            });
+            if (!session) {
+                return socket.emit("chatError", "Chat has ended");
+            }
 
             const messageData = {
                 doctorId: chatRoom.doctorId,

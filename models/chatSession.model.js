@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const chatSessionSchema = new mongoose.Schema({
     chatRoom: { type: mongoose.Schema.Types.ObjectId, ref: 'ChatRoom'},
+    doctorIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' }],
     doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' },
     patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'pet' },
     requestedAt: { type: Date, default: Date.now },

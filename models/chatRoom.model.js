@@ -11,6 +11,11 @@ const chatRoomSchema = new mongoose.Schema({
         ref: 'Doctor',
         // required: true,
     },
+    serviceId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Service',
+        default: null, // Allow serviceId to be optional
+    },
     roomId: {
         type: String,
         required: true,
