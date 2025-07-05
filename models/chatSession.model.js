@@ -8,6 +8,7 @@ const chatSessionSchema = new mongoose.Schema({
     requestedAt: { type: Date, default: Date.now },
     startedAt: { type: Date },
     endedAt: { type: Date },
+    servicePrice : { type: Number, required: true, default: 0 },
     status: {
         type: String,
         enum: ['pending', 'accepted', 'rejected', 'started', 'ended'],

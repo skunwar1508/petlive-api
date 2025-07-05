@@ -148,7 +148,6 @@ module.exports = function (io) {
             if (!updated || updated.status !== "accepted") {
                 return socket.emit("chatError", "Request already accepted by another doctor");
             }
-
             // Deduct amount from patient wallet
             pet.walletBalance -= chatRequest.servicePrice;
             await pet.save();
@@ -169,7 +168,8 @@ module.exports = function (io) {
             await updated.save();
 
             // Notify patient with doctor info and chatRoomId
-            const doctorInfo = await Doctor.findById(socket.doc.id).select("-password");
+            const doctorInfo = await Doctor.findById(socket.doc.id).select("-password").populate("profileImage");
+            console.log(`chatAccepted:${chatRequest.patientId}`);
             io.emit(`chatAccepted:${chatRequest.patientId}`, {
                 chatRoomId: chatRoom._id,
                 doctorId: socket.doc.id,
@@ -250,7 +250,7 @@ module.exports = function (io) {
             console.log(`${socket.doc.id} joined chat ${user.room}`);
 
             io.to(user.id).emit("recentMessages", { data: chatRoom, messages: "successfully joined" });
-        });
+        }); 
 
         // When chat ends, update session with total minutes and amount
         socket.on("leaveChat", async () => {
