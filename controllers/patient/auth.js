@@ -84,6 +84,42 @@ const getProfile = async (req, res) => {
                 { path: "ownerImage", select: "_id path" },
                 { path: "petImages", select: "_id path" }
             ]);
+            // Calculate profile completion percentage based on required fields
+            const profileFields = [
+                'phone',
+                'email',
+                'ownerName',
+                'ownerGender',
+                'ownerDob',
+                'ownerImage',
+                'name',
+                'age',
+                'petType',
+                'gender',
+                'interestFor',
+                'reasonToFind',
+                'weight',
+                'breed',
+                'color',
+                'activityLevel',
+                'dietaryPreference',
+                'trainingBehaviour',
+                'outdoorHabits',
+                'petImages'
+            ];
+
+            let filledFields = 0;
+            profileFields.forEach(field => {
+                if (Array.isArray(user[field])) {
+                    if (user[field] && user[field].length > 0) filledFields++;
+                } else if (user[field] !== undefined && user[field] !== null && user[field] !== '') {
+                    filledFields++;
+                }
+            });
+
+            const profileCompletion = Math.round((filledFields / profileFields.length) * 100);
+            user = user.toObject();
+            user.profileCompletion = profileCompletion;
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
