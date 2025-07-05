@@ -79,7 +79,11 @@ const lastStep = async (req, res) => {
 
 const getProfile = async (req, res) => {
     try {
-        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false }).populate(["ownerImage","petImages"]);
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false })
+            .populate([
+                { path: "ownerImage", select: "_id path" },
+                { path: "petImages", select: "_id path" }
+            ]);
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
@@ -154,7 +158,7 @@ const verifyLoginOtp = async (req, res) => {
 
                 user._doc.token = token;
                 await otpModel.deleteOne({ _id: otp[0]._id });
-                
+
                 // if (user.isProfileCompleted === false) {
                 //     return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
                 // }
