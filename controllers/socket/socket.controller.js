@@ -252,6 +252,12 @@ async function isBookingOpen(req, res) {
             patientId,
             serviceId,
             isClosed: false
+        }).populate({
+            path: 'doctorId',
+            populate: {
+                path: 'profileImage',
+                select: '_id path'
+            }
         });
 
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), chatRoom);
