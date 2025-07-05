@@ -326,6 +326,7 @@ const signupStep4 = async (req, res) => {
 
         user.petType = petType;
         user.gender = gender;
+        user.isProfileCompleted = true
         user.lastStep = 5;
         await user.save();
 
@@ -343,7 +344,7 @@ const signupStep5 = async (req, res) => {
         let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
-        user.intrestFor = intrestFor;
+        user.interestFor = intrestFor;
         user.lastStep = 6;
         await user.save();
 
@@ -362,7 +363,6 @@ const signupStep6 = async (req, res) => {
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         user.reasonToFind = reasonToFind;
-        user.isProfileCompleted = true
         user.lastStep = 7;
         await user.save();
 
