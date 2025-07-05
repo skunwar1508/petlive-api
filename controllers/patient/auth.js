@@ -79,7 +79,7 @@ const lastStep = async (req, res) => {
 
 const getProfile = async (req, res) => {
     try {
-        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false }).populate(["ownerImage","petImages"]);
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
