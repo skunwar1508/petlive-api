@@ -29,9 +29,18 @@ const chatRoomSchema = new mongoose.Schema({
         type: Date,
         default: null,
     },
-    isOpen: {
+    isClosed: {
         type: Boolean,
         default: false,
+    },
+    isRated: {
+        type: Boolean,
+        default: false,
+    },
+    rating: {
+        type: Number,
+        min: 0,
+        max: 5,
     },
 }, { timestamps: true });
 

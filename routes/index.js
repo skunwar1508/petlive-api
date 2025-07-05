@@ -15,5 +15,7 @@ router.use("/category", require("./category/category.index.js"));
 router.use("/subcategory", require("./subcategory/subcategory.index.js"));
 router.use("/breadColor", require("./breadColor/breadColor.index.js"));
 router.use("/services", require("./services/services.routes.js"));
+router.use("/community", require("../routes/community/community.route.js"));
+router.use("/request", require("../routes/socket/socket.routes.js"));
 
 module.exports = router;

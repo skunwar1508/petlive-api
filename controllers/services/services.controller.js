@@ -14,7 +14,7 @@ const serviceController = {
             ) {
                 filter.status = true;
             }
-            const services = await Service.find(filter);
+            const services = await Service.find(filter).populate({ path: 'image', select: '_id path' });
             return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), services);
         } catch (err) {
             return apiResponse.errorMessage(res, 500, err.message);
@@ -81,7 +81,10 @@ const serviceController = {
                 filter.status = true;
             }
             const [services, total] = await Promise.all([
-                Service.find(filter).skip(skip).limit(parseInt(perPage)),
+                Service.find(filter)
+                    .skip(skip)
+                    .limit(parseInt(perPage))
+                    .populate({ path: 'image', select: '_id path' }),
                 Service.countDocuments(filter)
             ]);
             return apiResponse.successResWithPagination(res, "Paginated services", services, total);

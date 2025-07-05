@@ -1,8 +1,10 @@
 const Chat = require('../../models/chat.model'); // Adjust the path as needed
+const Chatroom = require('../../models/chatRoom.model'); // Adjust the path as needed
 const roles = require('../../utils/roles');
-
+const apiResponse = require("../../utils/apiResponse.js");
+const CMS = require("../../common-modules/index.js");
 // Controller to get all messages
-const getAllMessages = async (query) => {
+const getAllMessages = async (query, res) => {
     try {
         const { patientId, doctorId } = query;
         const filter = {};
@@ -11,10 +13,10 @@ const getAllMessages = async (query) => {
         if (doctorId) filter.doctorId = doctorId;
 
         const messages = await Chat.find(filter); // Fetch messages based on the filter
-        res.status(200).json(messages);
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), messages);
     } catch (error) {
         console.error('Error fetching messages:', error);
-        res.status(500).json({ error: 'Failed to fetch messages' });
+        return apiResponse.somethingWentWrongMsg(res);
     }
 };
 
@@ -22,7 +24,7 @@ async function chatroomPagin(req, res) {
     try {
         const error = paginateChatRoomValidator(req.body);
         if (error) {
-            return apiResponses.errorMessage(res, 400, error.details[0].message);
+            return apiResponse.errorMessage(res, 400, error.details[0].message);
         }
         const id = req.doc.id;
         const { page = 1, perPage = 10, searchString = '' } = req.body;
@@ -159,20 +161,19 @@ async function chatroomPagin(req, res) {
         ];
 
         const [chatRooms, totalCountArr] = await Promise.all([
-            chatRoom.aggregate(dataPipeline),
-            chatRoom.aggregate(countPipeline)
+            Chatroom.aggregate(dataPipeline),
+            Chatroom.aggregate(countPipeline)
         ]);
 
         const totalCount = totalCountArr[0]?.totalCount || 0;
-        return apiResponses.successResWithPagination(res, CMS.Lang_Messages("en", "success"), chatRooms, totalCount);
-        // return apiResponses.successResponse(res, CMS.Lang_Messages("en", "success"), {
-        //     data: chatRooms,
-        //     totalCount
-        // });
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), {
+            data: chatRooms,
+            totalCount
+        });
 
     } catch (error) {
         console.error(error);
-        return apiResponses.somethingWentWrongMsg(res);
+        return apiResponse.somethingWentWrongMsg(res);
     }
 }
 
@@ -180,7 +181,7 @@ async function chatPagin(req, res) {
     try {
         const error = paginateChatValidator(req.body);
         if (error) {
-            return apiResponses.errorMessage(res, 400, error.details[0].message);
+            return apiResponse.errorMessage(res, 400, error.details[0].message);
         }
 
         const { page = 1, perPage = 10, searchString = '', id } = req.body;
@@ -213,7 +214,6 @@ async function chatPagin(req, res) {
         console.log(filter, req.doc)
 
         const totalCount = await chat.countDocuments(filter);
-        // console.log(totalCount, - startIndex - parseInt(perPage))
         const chatRooms = await chat
             .find(filter, {}, skipCondition)
             .populate({
@@ -224,21 +224,44 @@ async function chatPagin(req, res) {
                 path: "doctorId",
                 select: "firstName lastName"
             })
-            // .skip(totalCount - startIndex - parseInt(perPage)) // Adjust skip to fetch data from the end
             .limit(parseInt(perPage));
 
-
-        return apiResponses.successResWithPagination(res, CMS.Lang_Messages("en", "success"), chatRooms, totalCount);
-        // return apiResponses.successResponse(res, CMS.Lang_Messages("en", "success"), {
-        //     data: chatRooms,
-        //     totalCount,
-        // });
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), {
+            data: chatRooms,
+            totalCount,
+        });
     } catch (error) {
         console.error(error);
-        return apiResponses.somethingWentWrongMsg(res);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+}
+
+/**
+ * API to check if a chatroom is open for a given patientId and serviceId
+ * Expects: { patientId, serviceId }
+ */
+async function isBookingOpen(req, res) {
+    try {
+        let patientId = req.doc.id;
+        let serviceId = req.params.serviceId;
+        if (!patientId || !serviceId) {
+            return apiResponse.errorMessage(res, 400, "patientId and serviceId are required");
+        }
+
+        const chatRoom = await Chatroom.findOne({
+            patientId,
+            serviceId,
+            isClosed: false
+        });
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), chatRoom);
+    } catch (error) {
+        console.error("Error checking chatroom open status:", error);
+        return apiResponse.somethingWentWrongMsg(res);
     }
 }
 module.exports = {
     getAllMessages,
-    chatroomPagin
+    chatroomPagin,
+    isBookingOpen
 };
