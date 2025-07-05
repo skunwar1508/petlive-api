@@ -73,10 +73,7 @@ const petSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
-    petImages: {
-        type: [String],
-        default: [],
-    },
+    petImages:[{type: mongoose.Schema.Types.ObjectId, ref: 'Image'}],
     isAcceptTerms: {
         type: Boolean,
         default: false,
