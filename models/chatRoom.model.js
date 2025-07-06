@@ -16,6 +16,11 @@ const chatRoomSchema = new mongoose.Schema({
         ref: 'Service',
         default: null, // Allow serviceId to be optional
     },
+    chatRequestId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ChatSession',
+        default: null, // Allow chatRequestId to be optional
+    },
     roomId: {
         type: String,
         required: true,

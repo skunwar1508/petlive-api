@@ -159,6 +159,7 @@ module.exports = function (io) {
                 patientId: chatRequest.patientId,
                 doctorId: socket.doc.id,
                 serviceId: chatRequest.serviceId,
+                chatRequestId : chatRequest._id,
                 roomId
             });
             await chatRoom.save();
