@@ -283,6 +283,11 @@ module.exports = function (io) {
             session.endedAt = new Date();
             await session.save();
 
+            chatRoom.isClosed = true;
+            chatRoom.lastMessage = "Chat ended";
+            chatRoom.lastMessageAt = new Date();
+            await chatRoom.save();
+
             io.to(user.room).emit("leftChat", { message: "Chat ended" });
             socket.leave(user.room);
             removeUser(socket.doc.id);
