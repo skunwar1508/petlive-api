@@ -10,7 +10,7 @@ const {
 } = require('../../controllers/socket/socket.controller.js'); // Adjust path as needed
 
 // Get all messages (query params: patientId, doctorId)
-router.get('/messages', verifyJWT, (req, res) => getAllMessages(req.query, res));
+router.get('/messages/:id', verifyJWT, (req, res) => getAllMessages(req, res));
 
 // Chatroom pagination
 router.post('/chatroom/pagination', verifyJWT, chatroomPagin);

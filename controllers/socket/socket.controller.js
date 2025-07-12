@@ -3,16 +3,33 @@ const Chatroom = require('../../models/chatRoom.model'); // Adjust the path as n
 const roles = require('../../utils/roles');
 const apiResponse = require("../../utils/apiResponse.js");
 const CMS = require("../../common-modules/index.js");
+const { default: mongoose } = require('mongoose');
+const { name } = require('ejs');
 // Controller to get all messages
-const getAllMessages = async (query, res) => {
+const getAllMessages = async (req, res) => {
     try {
-        const { patientId, doctorId } = query;
+        const { id } = req.query;
         const filter = {};
 
-        if (patientId) filter.patientId = patientId;
-        if (doctorId) filter.doctorId = doctorId;
+        // Role-based filtering
+        if (req.doc.role === roles.patient) {
+            filter.patientId = mongoose.Types.ObjectId(req.doc.id);
+            if (id) filter.doctorId = mongoose.Types.ObjectId(id);
+        } else if (req.doc.role === roles.doctor) {
+            filter.doctorId = mongoose.Types.ObjectId(req.doc.id);
+            if (id) filter.patientId = mongoose.Types.ObjectId(id);
+        }
 
-        const messages = await Chat.find(filter); // Fetch messages based on the filter
+        const messages = await Chat.find(filter)
+            .sort({ createdAt: -1 })
+            .populate({
+                path: 'doctorId',
+                select: 'name profileImage'
+            })
+            .populate({
+                path: 'patientId',
+                select: 'ownerName name ownerGender'
+            });
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), messages);
     } catch (error) {
         console.error('Error fetching messages:', error);
@@ -83,11 +100,10 @@ async function chatroomPagin(req, res) {
                     ...(searchRegex && {
                         $or: req.doc.role === roles.doctor
                             ? [
-                                { "patientDetails.fullName": { $regex: searchRegex } }
+                                { "patientDetails.name": { $regex: searchRegex } }
                             ]
                             : [
-                                { "providerDetails.firstName": { $regex: searchRegex } },
-                                { "providerDetails.lastName": { $regex: searchRegex } }
+                                { "providerDetails.name": { $regex: searchRegex } }
                             ]
                     })
                 }
@@ -138,14 +154,17 @@ async function chatroomPagin(req, res) {
                     createdAt: 1,
                     providerDetails: {
                         _id: 1,
-                        firstName: 1,
-                        lastName: 1,
-                        profileImage: 1
+                        name: 1,
+                        profileImage: {
+                            _id: 1,
+                            path: 1
+                        }
                     },
                     patientDetails: {
                         _id: 1,
-                        fullName: 1,
-                        profileImage: 1
+                        ownerName: 1,
+                        name: 1,
+                        ownerGender: 1,
                     },
                     unseenMessageCount: 1
                 }
@@ -177,64 +196,7 @@ async function chatroomPagin(req, res) {
     }
 }
 
-async function chatPagin(req, res) {
-    try {
-        const error = paginateChatValidator(req.body);
-        if (error) {
-            return apiResponse.errorMessage(res, 400, error.details[0].message);
-        }
 
-        const { page = 1, perPage = 10, searchString = '', id } = req.body;
-        const startIndex = (page - 1) * perPage;
-        const skipCondition = {
-            skip: startIndex,
-            limit: perPage,
-            sort: { createdAt: -1 },
-        };
-
-        const searchRegex = searchString ? new RegExp(searchString, 'i') : "";
-
-        let filter = {};
-
-        // Role-based filtering
-        if (req.doc.role === roles.patient) {
-            filter.patientId = mongoose.Types.ObjectId(req.doc.id);
-            filter.chatRoom = mongoose.Types.ObjectId(id);
-        }
-        if (req.doc.role === roles.doctor) {
-            filter.doctorId = mongoose.Types.ObjectId(req.doc.id);
-            filter.chatRoom = mongoose.Types.ObjectId(id);
-        }
-        if (searchRegex) {
-            filter.$or = [
-                { "message": { $regex: searchRegex } },
-                { "senderType": { $regex: searchRegex } }
-            ];
-        }
-        console.log(filter, req.doc)
-
-        const totalCount = await chat.countDocuments(filter);
-        const chatRooms = await chat
-            .find(filter, {}, skipCondition)
-            .populate({
-                path: "patientId",
-                select: "fullName"
-            })
-            .populate({
-                path: "doctorId",
-                select: "firstName lastName"
-            })
-            .limit(parseInt(perPage));
-
-        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), {
-            data: chatRooms,
-            totalCount,
-        });
-    } catch (error) {
-        console.error(error);
-        return apiResponse.somethingWentWrongMsg(res);
-    }
-}
 
 /**
  * API to check if a chatroom is open for a given patientId and serviceId
