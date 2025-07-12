@@ -14,10 +14,10 @@ const getAllMessages = async (req, res) => {
         // Role-based filtering
         if (req.doc.role === roles.patient) {
             filter.patientId = mongoose.Types.ObjectId(req.doc.id);
-            if (id) filter.doctorId = mongoose.Types.ObjectId(id);
+            if (id) filter.chatRoom = mongoose.Types.ObjectId(id);
         } else if (req.doc.role === roles.doctor) {
             filter.doctorId = mongoose.Types.ObjectId(req.doc.id);
-            if (id) filter.patientId = mongoose.Types.ObjectId(id);
+            if (id) filter.chatRoom = mongoose.Types.ObjectId(id);
         }
 
         const messages = await Chat.find(filter)
