@@ -3,6 +3,7 @@ const Chatroom = require('../../models/chatRoom.model'); // Adjust the path as n
 const roles = require('../../utils/roles');
 const apiResponse = require("../../utils/apiResponse.js");
 const CMS = require("../../common-modules/index.js");
+const ChatSessions = require('../../models/chatSession.model.js'); // Adjust the path as needed
 const { default: mongoose } = require('mongoose');
 const { name } = require('ejs');
 // Controller to get all messages
@@ -228,8 +229,33 @@ async function isBookingOpen(req, res) {
         return apiResponse.somethingWentWrongMsg(res);
     }
 }
+
+const getAllChatSessions = async (req, res) => {
+    try {
+        const doctorId = req.doc.id;
+
+        let chatSessions = await ChatSessions.find({ doctorId: doctorId, status: 'pending' })
+            .populate('doctorId', 'name profileImage')
+            .populate('serviceId', 'name price')
+            .populate({
+                path: 'patientId',
+                select: 'name ownerImage',
+                populate: {
+                    path: 'ownerImage',
+                    select: '_id path',
+                    options: { limit: 1 }
+                }
+            });
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), chatSessions);
+    } catch (error) {
+        console.error("Error fetching chat sessions:", error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
 module.exports = {
     getAllMessages,
     chatroomPagin,
-    isBookingOpen
+    isBookingOpen,
+    getAllChatSessions
 };

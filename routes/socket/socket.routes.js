@@ -6,7 +6,8 @@ const router = express.Router();
 const {
     getAllMessages,
     chatroomPagin,
-    isBookingOpen
+    isBookingOpen,
+    getAllChatSessions
 } = require('../../controllers/socket/socket.controller.js'); // Adjust path as needed
 
 // Get all messages (query params: patientId, doctorId)
@@ -17,5 +18,7 @@ router.post('/chatroom/pagination', verifyJWT, chatroomPagin);
 
 // Check if booking (chatroom) is open
 router.get('/chatroom/isBookingOpen/:serviceId', verifyJWT, isBookingOpen);
+
+router.get('/chatsessions', verifyJWT, getAllChatSessions);
 
 module.exports = router;
