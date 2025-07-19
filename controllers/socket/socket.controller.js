@@ -6,6 +6,7 @@ const CMS = require("../../common-modules/index.js");
 const ChatSessions = require('../../models/chatSession.model.js'); // Adjust the path as needed
 const { default: mongoose } = require('mongoose');
 const { name } = require('ejs');
+const Joi = require('joi');
 // Controller to get all messages
 const getAllMessages = async (req, res) => {
     try {
@@ -40,7 +41,7 @@ const getAllMessages = async (req, res) => {
 
 async function chatroomPagin(req, res) {
     try {
-        const error = paginateChatRoomValidator(req.body);
+        const error = paginateValidation(req.body);
         if (error) {
             return apiResponse.errorMessage(res, 400, error.details[0].message);
         }
@@ -252,6 +253,17 @@ const getAllChatSessions = async (req, res) => {
         return apiResponse.somethingWentWrongMsg(res);
     }
 };
+
+function paginateValidation(body) {
+    const schema = Joi.object({
+        page: Joi.number().required(),
+        perPage: Joi.number().required(),
+        searchString: Joi.string().allow("", null)
+    });
+
+    const { error } = schema.validate(body);
+    return error || null;
+}
 
 module.exports = {
     getAllMessages,
