@@ -240,10 +240,26 @@ const fullProfileValidation = async (req, res, next) => {
     }
     next();
 };
+const paginateValidation = async (req, res, next) => {
+    const schema = Joi.object({
+        page: Joi.number().min(1).default(1),
+        perPage: Joi.number().min(1).max(100).default(10),
+        searchString: Joi.string().allow("", null)
+    });
+
+    const value = schema.validate(req.body);
+
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    next();
+};
 
 // ==========================================================
 
 module.exports = {
+    paginateValidation,
     resendValidation,
     verifyOtpValidation,
     signUpValidation,

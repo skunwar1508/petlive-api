@@ -6,6 +6,7 @@ const roles = require("../../utils/roles.js");
 const apiResponse = require("../../utils/apiResponse.js");
 const bcrypt = require("bcrypt");
 const Joi = require("joi");
+const { default: mongoose } = require("mongoose");
 
 const signup = async (req, res) => {
     try {
@@ -509,6 +510,63 @@ const profileUpdate = async (req, res) => {
     }
 };
 
+const getPatientPagination = async (req, res) => {
+    try {
+        if (!req.doc || req.doc.role !== roles.admin) {
+            return apiResponse.errorMessage(res, 403, "Access denied. Admins only.");
+        }
+        const { page, perPage, searchString } = req.body;
+
+        const query = {
+            isDeleted: false,
+            isProfileCompleted: true
+        };
+
+        if (searchString) {
+            query.$or = [
+                { name: { $regex: searchString, $options: 'i' } },
+                { phone: { $regex: searchString, $options: 'i' } }
+            ];
+        }
+
+        const patients = await patientModel.find(query)
+            .skip((page - 1) * perPage)
+            .limit(perPage)
+            .populate('ownerImage', '_id path')
+            .populate('petImages', '_id path');
+
+        const totalCount = await patientModel.countDocuments(query);
+
+        return apiResponse.successResWithPagination(res, CMS.Lang_Messages("en", "success"), patients, totalCount);
+    } catch (error) {
+        console.error("Error fetching patient pagination:", error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const getPatientById = async (req, res) => {
+    try {
+        const patientId = req.params.id;
+
+        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "invalidpatientid"));
+        }
+
+        const patient = await patientModel.findOne({ _id: patientId, isDeleted: false })
+            .populate('ownerImage', '_id path')
+            .populate('petImages', '_id path');
+
+        if (!patient) {
+            return apiResponse.errorMessage(res, 404, CMS.Lang_Messages("en", "usernotfound"));
+        }
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), patient);
+    } catch (error) {
+        console.error("Error fetching patient by ID:", error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
 module.exports = {
     signup,
     signupStep1,
@@ -526,5 +584,7 @@ module.exports = {
     verifyLoginOtp,
     verifyOtp,
     resendOtp,
-    profileUpdate
+    profileUpdate,
+    getPatientPagination,
+    getPatientById
 };

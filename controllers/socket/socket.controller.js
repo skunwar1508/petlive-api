@@ -1,4 +1,4 @@
-const Chat = require('../../models/chat.model'); // Adjust the path as needed
+const ChatMessage = require('../../models/chat.model'); // Adjust the path as needed
 const Chatroom = require('../../models/chatRoom.model'); // Adjust the path as needed
 const roles = require('../../utils/roles');
 const apiResponse = require("../../utils/apiResponse.js");
@@ -22,7 +22,7 @@ const getAllMessages = async (req, res) => {
             if (id) filter.chatRoom = mongoose.Types.ObjectId(id);
         }
 
-        const messages = await Chat.find(filter)
+        const messages = await ChatMessage.find(filter)
             .sort({ createdAt: -1 })
             .populate({
                 path: 'doctorId',
@@ -61,85 +61,85 @@ async function chatroomPagin(req, res) {
         }
         const basePipeline = [
             {
-                $lookup: {
-                    from: "doctors",
-                    localField: "doctorId",
-                    foreignField: "_id",
-                    as: "providerDetails"
-                }
+            $lookup: {
+                from: "doctors",
+                localField: "doctorId",
+                foreignField: "_id",
+                as: "providerDetails"
+            }
             },
             { $unwind: "$providerDetails" },
             {
-                $lookup: {
-                    from: "images",
-                    localField: "providerDetails.profileImage",
-                    foreignField: "_id",
-                    as: "providerDetails.profileImage"
-                }
+            $lookup: {
+                from: "images",
+                localField: "providerDetails.profileImage",
+                foreignField: "_id",
+                as: "providerDetails.profileImage"
+            }
             },
             { $unwind: { path: "$providerDetails.profileImage", preserveNullAndEmptyArrays: true } },
             {
-                $lookup: {
-                    from: "patients",
-                    localField: "patientId",
-                    foreignField: "_id",
-                    as: "patientDetails"
-                }
+            $lookup: {
+                from: "patients",
+                localField: "patientId",
+                foreignField: "_id",
+                as: "patientDetails"
+            }
             },
             { $unwind: { path: "$patientDetails", preserveNullAndEmptyArrays: true } },
             {
-                $lookup: {
-                    from: "images",
-                    localField: "patientDetails.profileImage",
-                    foreignField: "_id",
-                    as: "patientDetails.profileImage"
-                }
+            $lookup: {
+                from: "images",
+                localField: "patientDetails.profileImage",
+                foreignField: "_id",
+                as: "patientDetails.profileImage"
+            }
             },
             { $unwind: { path: "$patientDetails.profileImage", preserveNullAndEmptyArrays: true } },
             {
-                $match: {
-                    ...matchStage,
-                    ...(searchRegex && {
-                        $or: req.doc.role === roles.doctor
-                            ? [
-                                { "patientDetails.name": { $regex: searchRegex } }
-                            ]
-                            : [
-                                { "providerDetails.name": { $regex: searchRegex } }
-                            ]
-                    })
-                }
+            $match: {
+                ...matchStage,
+                ...(searchRegex && {
+                $or: req.doc.role === roles.doctor
+                    ? [
+                    { "patientDetails.name": { $regex: searchRegex } }
+                    ]
+                    : [
+                    { "providerDetails.name": { $regex: searchRegex } }
+                    ]
+                })
+            }
             },
             {
-                $lookup: {
-                    from: "chats",
-                    let: { roomId: "$_id" },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        { $eq: ["$chatRoom", "$$roomId"] },
-                                        { $eq: ["$isSeen", false] },
-                                        { $eq: ["$senderType", req.doc.role === roles.patient ? "provider" : "patient"] }
-                                    ]
-                                }
-                            }
-                        },
-                        { $count: "unseenCount" }
-                    ],
-                    as: "unseenMessages"
-                }
-            },
-            {
-                $addFields: {
-                    unseenMessageCount: {
-                        $ifNull: [{ $arrayElemAt: ["$unseenMessages.unseenCount", 0] }, 0]
+            $lookup: {
+                from: "chats",
+                let: { roomId: "$_id" },
+                pipeline: [
+                {
+                    $match: {
+                    $expr: {
+                        $and: [
+                        { $eq: ["$chatRoom", "$$roomId"] },
+                        { $eq: ["$isSeen", false] },
+                        { $eq: ["$senderType", req.doc.role === roles.patient ? "provider" : "patient"] }
+                        ]
                     }
-                }
+                    }
+                },
+                { $count: "unseenCount" }
+                ],
+                as: "unseenMessages"
+            }
             },
             {
-                $unset: "unseenMessages"
+            $addFields: {
+                unseenMessageCount: {
+                $ifNull: [{ $arrayElemAt: ["$unseenMessages.unseenCount", 0] }, 0]
+                }
+            }
+            },
+            {
+            $unset: "unseenMessages"
             }
         ];
 
@@ -147,29 +147,30 @@ async function chatroomPagin(req, res) {
         const dataPipeline = [
             ...basePipeline,
             {
-                $project: {
+            $project: {
+                _id: 1,
+                doctorId: 1,
+                roomId: 1,
+                lastMessage: 1,
+                lastMessageAt: 1,
+                createdAt: 1,
+                chatRequestId: 1, // <-- Added this line
+                providerDetails: {
+                _id: 1,
+                name: 1,
+                profileImage: {
                     _id: 1,
-                    doctorId: 1,
-                    roomId: 1,
-                    lastMessage: 1,
-                    lastMessageAt: 1,
-                    createdAt: 1,
-                    providerDetails: {
-                        _id: 1,
-                        name: 1,
-                        profileImage: {
-                            _id: 1,
-                            path: 1
-                        }
-                    },
-                    patientDetails: {
-                        _id: 1,
-                        ownerName: 1,
-                        name: 1,
-                        ownerGender: 1,
-                    },
-                    unseenMessageCount: 1
+                    path: 1
                 }
+                },
+                patientDetails: {
+                _id: 1,
+                ownerName: 1,
+                name: 1,
+                ownerGender: 1,
+                },
+                unseenMessageCount: 1
+            }
             },
             { $sort: { lastMessageAt: -1 } },
             { $skip: startIndex },

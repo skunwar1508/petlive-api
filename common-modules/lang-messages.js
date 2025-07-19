@@ -66,6 +66,8 @@ let langauge = {
         wallet_amount_added: "Wallet amount added successfully.",
         unauthorized_access: "Unauthorized access.",
         userblocked: "User is blocked.",
+        invalidpatientid: "Invalid patient ID.",
+        invaliddoctorid: "Invalid doctor ID.",
     },
 };
 
