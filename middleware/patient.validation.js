@@ -244,7 +244,10 @@ const paginateValidation = async (req, res, next) => {
     const schema = Joi.object({
         page: Joi.number().min(1).default(1),
         perPage: Joi.number().min(1).max(100).default(10),
-        searchString: Joi.string().allow("", null)
+        searchString: Joi.string().allow("", null),
+        filters: Joi.object({
+            profileStatus: Joi.string().allow("", null)
+        }).allow(null)
     });
 
     const value = schema.validate(req.body);

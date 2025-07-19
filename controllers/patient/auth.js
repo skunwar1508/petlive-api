@@ -515,7 +515,7 @@ const getPatientPagination = async (req, res) => {
         if (!req.doc || req.doc.role !== roles.admin) {
             return apiResponse.errorMessage(res, 403, "Access denied. Admins only.");
         }
-        const { page, perPage, searchString } = req.body;
+        const { page, perPage, searchString, filters } = req.body;
 
         const query = {
             isDeleted: false,
@@ -529,6 +529,9 @@ const getPatientPagination = async (req, res) => {
             ];
         }
 
+        if (filters?.profileStatus !== undefined) {
+            query.isActive = filters.profileStatus;
+        }
         const patients = await patientModel.find(query)
             .skip((page - 1) * perPage)
             .limit(perPage)
