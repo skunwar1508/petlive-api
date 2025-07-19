@@ -68,6 +68,7 @@ let langauge = {
         userblocked: "User is blocked.",
         invalidpatientid: "Invalid patient ID.",
         invaliddoctorid: "Invalid doctor ID.",
+        invalidpatientid : "Invalid patient ID.",
     },
 };
 

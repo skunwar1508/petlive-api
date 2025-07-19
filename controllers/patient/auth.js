@@ -566,6 +566,29 @@ const getPatientById = async (req, res) => {
         return apiResponse.somethingWentWrongMsg(res);
     }
 };
+const updatePatientByStatus = async (req, res) => {
+    try {
+        const patientId = req.params.id;
+        const { isActive } = req.body;
+
+        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "invalidpatientid"));
+        }
+
+        let patient = await patientModel.findOne({ _id: patientId, isDeleted: false });
+        if (!patient) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        }
+
+        patient.isActive = isActive;
+        await patient.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), patient);
+    } catch (error) {
+        console.error("Error updating patient status:", error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
 
 module.exports = {
     signup,
@@ -586,5 +609,6 @@ module.exports = {
     resendOtp,
     profileUpdate,
     getPatientPagination,
-    getPatientById
+    getPatientById,
+    updatePatientByStatus
 };

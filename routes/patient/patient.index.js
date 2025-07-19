@@ -25,7 +25,7 @@ router.get('/transactions', verifyJWT, wallet.getWalletTransactions);
 // router.get('/refreshToken', verifyJWT, authController.refreshToken);
 router.post('/paginate', verifyJWT, patientValidation.paginateValidation, authController.getPatientPagination);
 router.get('/details/:id', verifyJWT, authController.getPatientById);
-// router.get('/status/:status/:id', verifyJWT, authController.upddatePatientByStatus);
+router.post('/status/:id', verifyJWT, authController.updatePatientByStatus);
 
 router.use('/signup/steps', verifyJWT, signupStepRouter);
 // router.use('/', verifyJWT, signupStepRouter);
