@@ -19,9 +19,13 @@ router.get('/profile', verifyJWT, authController.getProfile);
 router.post('/profile/consultation', verifyJWT, validation.consultationValidation, authController.consultationFeeUpdate);
 router.post('/pagination', verifyJWT, validation.paginValidation, authController.pagination);
 router.get('/details/:doctorId', verifyJWT, authController.getDoctorDetails);
-router.get('/status/:status/:doctorId', verifyJWT, authController.changeStatus);
+router.put('/status/:doctorId', verifyJWT, authController.changeStatus);
+router.put('/profileStatus/:doctorId', verifyJWT, authController.profileStatusUpdate);
 router.post('/recommended/update', verifyJWT, recommendedValidation, updateRecommended);
 router.post('/online/update/status', verifyJWT, onlineStatusValidation, updateOnlineStatus);
+router.post('/profile/update', verifyJWT, validation.updateProfileValidation, authController.updateDoctorProfile);
+router.post('/profile/update/:doctorId', verifyJWT, validation.updateProfileValidation, authController.updateDoctorProfile);
+router.post('/create', verifyJWT, validation.updateProfileValidation, authController.doctorCreate);
 
 // router.post('/verifyOtp', validation.verifyOtpValidation, authController.verifyOtp);
 // router.post('/verifySignUpOTP', validation.verifyOtpSignupValidation, authController.verifySignUpOTP);

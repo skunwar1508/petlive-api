@@ -45,16 +45,14 @@ const doctorSchema = new Schema({
         ref: 'Service', // Reference the Service model
     }],
     animalPreference: {
-        type: [String],
-        default: [],
+        type: [String]
     },
     primarySpecialisation: {
         type: String,
         trim: true,
     },
     otherSpecialisation: {
-        type: [String],
-        default: [],
+        type: String
     },
     recommended: {
         type: Boolean,
@@ -77,6 +75,10 @@ const doctorSchema = new Schema({
     isProfileCompleted: {
         type: Boolean,
         default: false,
+    },
+    isActive: {
+        type: Boolean,
+        default: true, // Default to active
     },
     lastStep: {
         type: Number,

@@ -353,7 +353,7 @@ const getProfile = async (req, res) => {
 
 const pagination = async (req, res) => {
     try {
-        const { page = 1, perPage = 10, searchString = "" } = req.body;
+        const { page = 1, perPage = 10, searchString = "", filters } = req.body;
         const pageNumber = parseInt(page);
         const limit = parseInt(perPage);
         const skip = (pageNumber - 1) * limit;
@@ -375,6 +375,16 @@ const pagination = async (req, res) => {
             ];
         }
 
+        if (filters) {
+            const { profileStatus, verificationStatus } = filters;
+            if (profileStatus !== undefined) {
+                filter.isActive = profileStatus;
+            }
+            if (verificationStatus !== undefined) {
+                filter.approveProfile = verificationStatus;
+            }
+        }
+        console.log("Filter:", filter); 
         // Total count for pagination
         const totalDoctors = await doctorModel.countDocuments(filter);
 
@@ -426,7 +436,13 @@ const changeStatus = async (req, res) => {
             return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "unauthorized_access"));
         }
 
-        const { status, doctorId } = req.params;
+        const { doctorId } = req.params;
+        const { status } = req.body;
+
+        if (!status) {
+            return apiResponse.validationErrorWithData(res, "Status is required");
+        }
+
 
         if (!doctorId) {
             return apiResponse.validationErrorWithData(res, "Doctor ID is required");
@@ -436,11 +452,48 @@ const changeStatus = async (req, res) => {
         if (!['Pending', 'Approved', 'Rejected'].includes(status)) {
             return apiResponse.validationErrorWithData(res, "Invalid status value. Status must be approved, pending, or rejected");
         }
+        // If status is 'Rejected', also mark doctor as deleted
+        let updateFields = { approveProfile: status };
+        if (status.toLowerCase() === 'rejected') {
+            updateFields.isDeleted = true;
+        }
 
         // Find and update the doctor
         const doctor = await doctorModel.findOneAndUpdate(
             { _id: doctorId, isDeleted: false },
-            { approveProfile: status },
+            updateFields,
+            { new: true }
+        ).select("-password");
+
+        if (!doctor) {
+            return apiResponse.errorMessage(res, 404, CMS.Lang_Messages("en", "usernotfound"));
+        }
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+const profileStatusUpdate = async (req, res) => {
+    try {
+        const { doctorId } = req.params;
+        const { isActive } = req.body;
+        if (req.doc.role !== roles.admin) {
+            return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "unauthorized_access"));
+        }
+
+        if (!doctorId) {
+            return apiResponse.validationErrorWithData(res, "Doctor ID is required");
+        }
+        if (typeof isActive !== 'boolean') {
+            return apiResponse.validationErrorWithData(res, "isActive must be a boolean value");
+        }
+
+        // Find and update the doctor's profile status
+        const doctor = await doctorModel.findOneAndUpdate(
+            { _id: doctorId, isDeleted: false },
+            { isActive: isActive },
             { new: true }
         ).select("-password");
 
@@ -462,7 +515,7 @@ const consultationFeeUpdate = async (req, res) => {
             return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "unauthorized_access"));
         }
 
-        const {consultationFee} = req.body;
+        const { consultationFee } = req.body;
 
 
         // Find and update the doctor
@@ -483,10 +536,76 @@ const consultationFeeUpdate = async (req, res) => {
     }
 };
 
+const updateDoctorProfile = async (req, res) => {
+    try {
+        let doctorId;
+        // If admin, get doctorId from params; if doctor, get from token
+        if (req.doc.role === roles.admin) {
+            doctorId = req.params.doctorId;
+        } else if (req.doc.role === roles.doctor) {
+            doctorId = req.doc.id;
+        } else {
+            return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "unauthorized_access"));
+        }
+
+        const updateData = req.body;
+
+        if (!doctorId) {
+            return apiResponse.validationErrorWithData(res, "Doctor ID is required");
+        }
+
+        // Prevent updating password via this API
+        if (updateData.password) {
+            delete updateData.password;
+        }
+
+        const doctor = await doctorModel.findOneAndUpdate(
+            { _id: doctorId, isDeleted: false },
+            updateData,
+            { new: true }
+        ).select("-password");
+
+        if (!doctor) {
+            return apiResponse.errorMessage(res, 404, CMS.Lang_Messages("en", "usernotfound"));
+        }
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const doctorCreate = async (req, res) => {
+    try {
+        const doctorData = req.body;
+        if (req.doc.role !== roles.admin) {
+            return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "unauthorized_access"));
+        }
+
+        if (!doctorData.name || !doctorData.dob) {
+            return apiResponse.validationErrorWithData(res, "Name and DOB are required to generate default password");
+        }
+        const year = doctorData.dob.split('-')[0];
+        const defaultPassword = `${doctorData.name.replace(/\s+/g, '').toLowerCase()}@${year}`;
+        console.log("Default Password:", defaultPassword);
+        doctorData.password = await bcrypt.hash(defaultPassword, 10);
+
+        const newDoctor = new doctorModel(doctorData);
+        await newDoctor.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), newDoctor);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
 module.exports = {
     login,
     signup,
     resendOTP,
+    doctorCreate,
     verifySignUpOTP,
     signupStep1,
     signupStep2,
@@ -500,5 +619,7 @@ module.exports = {
     pagination,
     getDoctorDetails,
     changeStatus,
-    consultationFeeUpdate
+    consultationFeeUpdate,
+    updateDoctorProfile,
+    profileStatusUpdate
 };

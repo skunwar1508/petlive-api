@@ -193,7 +193,11 @@ const paginValidation = async (req, res, next) => {
         perPage: Joi.number().integer().min(1).max(100).default(10),
         searchString: Joi.string().allow('').optional(),
         sort: Joi.string().optional(),
-        order: Joi.string().valid('asc', 'desc').optional().default('asc')
+        order: Joi.string().valid('asc', 'desc').optional().default('asc'),
+        filters: Joi.object({
+            profileStatus: Joi.boolean().allow(null),
+            verificationStatus: Joi.string().allow(null, ""),
+        }).optional(),
     });
 
     const value = schema.validate(req.query);
@@ -221,6 +225,32 @@ const consultationValidation = async (req, res, next) => {
     }
     next();
 };
+
+const updateProfileValidation = async (req, res, next) => {
+    const schema = Joi.object({
+        name: Joi.string().required(),
+        email: Joi.string().email().required(),
+        phone: Joi.string().allow(null, ''),
+        gender: Joi.string().valid('Male', 'Female', 'Other').required(),
+        dob: Joi.string().isoDate().required(),
+        experience: Joi.number().integer().min(0).required(),
+        registrationNo: Joi.string().required(),
+        profileImage: Joi.string().allow(null, ''),
+        licenceImage: Joi.string().allow(null, ''),
+        primarySpecialisation: Joi.string().required(),
+        otherSpecialisation: Joi.string().allow('', null),
+        services: Joi.array().items(Joi.string()).required(),
+        animalPreference: Joi.array().items(Joi.string().valid("Dog", "Cat")).required(),
+        consultationFee: Joi.number().greater(0).required(),
+        bio: Joi.string().required()
+    });
+    const value = schema.validate(req.body);
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    next();
+};
 // ==========================================================
 // ==========================================================
 
@@ -238,6 +268,7 @@ module.exports = {
     signUpStep7Validation,
     signUpStep8Validation,
     paginValidation,
-    consultationValidation
+    consultationValidation,
+    updateProfileValidation
 };
 
