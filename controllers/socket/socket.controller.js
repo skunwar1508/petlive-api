@@ -187,10 +187,7 @@ async function chatroomPagin(req, res) {
         ]);
 
         const totalCount = totalCountArr[0]?.totalCount || 0;
-        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), {
-            data: chatRooms,
-            totalCount
-        });
+        return apiResponse.successResWithPagination(res, CMS.Lang_Messages("en", "success"), chatRooms, totalCount);
 
     } catch (error) {
         console.error(error);
