@@ -322,7 +322,7 @@ const signupStep2 = async (req, res) => {
     try {
         const { ownerName, ownerGender, ownerDob, ownerImage } = req.body;
 
-        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         user.ownerName = ownerName;
         user.ownerGender = ownerGender;
@@ -342,7 +342,7 @@ const signupStep3 = async (req, res) => {
     try {
         const { name, age } = req.body;
 
-        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         user.name = name;
@@ -361,7 +361,7 @@ const signupStep4 = async (req, res) => {
     try {
         const { petType, gender } = req.body;
 
-        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         user.petType = petType;
@@ -381,7 +381,7 @@ const signupStep5 = async (req, res) => {
     try {
         const { intrestFor } = req.body;
 
-        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         user.interestFor = intrestFor;
@@ -399,7 +399,7 @@ const signupStep6 = async (req, res) => {
     try {
         const { reasonToFind } = req.body;
 
-        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false });
+        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false });
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         user.reasonToFind = reasonToFind;
