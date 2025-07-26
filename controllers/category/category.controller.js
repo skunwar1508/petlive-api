@@ -62,7 +62,7 @@ const categoryController = {
             }
             const cat = await category.findOne(filter);
             if (!cat) return apiResponse.errorMessage(res, 404, CMS.Lang_Messages("en", "categorynotfound"));
-            return apiResponse.successResponse(res, cat);
+            return apiResponse.successResponse(res, 'success', cat);
         } catch (err) {
             return apiResponse.errorMessage(res, 500, err.message);
         }
