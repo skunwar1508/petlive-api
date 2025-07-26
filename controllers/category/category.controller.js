@@ -29,13 +29,7 @@ const categoryController = {
                 category.countDocuments(filters)
             ]);
 
-            return apiResponse.successResponseWithData(res, "Paginated categories", {
-                categories,
-                total,
-                page,
-                perPage,
-                totalPages: Math.ceil(total / perPage)
-            });
+            return apiResponse.successResWithPagination(res, "Paginated categories", categories, total);
         } catch (err) {
             return apiResponse.errorMessage(res, 500, err.message);
         }
