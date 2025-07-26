@@ -44,6 +44,14 @@ const validateJoi = (schema, source = 'body') => async (req, res, next) => {
     next();
 };
 
+const paginateCategorySchema = Joi.object({
+    page: Joi.number().integer().min(1).optional(),
+    perPage: Joi.number().integer().min(1).max(100).optional(),
+    searchString: Joi.string().trim().allow('').optional(),
+});
+
+exports.paginateCategoryValidation = [validateJoi(paginateCategorySchema, 'body')];
+
 // Exports
 exports.getAllCategoryValidation = []; // No validation needed
 

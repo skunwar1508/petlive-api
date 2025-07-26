@@ -11,9 +11,15 @@ const {
     getOneCategoryValidation,
     createCategoryValidation,
     updateCategoryValidation,
-    deleteCategoryValidation
+    deleteCategoryValidation,
+    paginateCategoryValidation
 } = require('../../validations/admin/category.validation');
 
+router.post('/paginate',
+    verifyJWT,
+    paginateCategoryValidation,
+    categoryController.getPaginatedCategories
+);
 router.get(
     '/getAll',
     verifyJWT,
