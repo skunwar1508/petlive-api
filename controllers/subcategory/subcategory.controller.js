@@ -87,16 +87,19 @@ const subcategoryController = {
     ,
         paginate: async (req, res) => {
             try {
-                const { page = 1, perPage = 10 } = req.body;
+                const { page = 1, perPage = 10, categoryId, searchString } = req.body;
                 let filter = {};
-                if (req.params.categoryId) {
-                    filter.category = req.params.categoryId;
-                }
                 if (
                     req.doc &&
                     (req.doc.role === roles.patient || req.doc.role === roles.doctor)
                 ) {
                     filter.status = true;
+                }
+                if (categoryId) {
+                    filter.category = categoryId;
+                }
+                if (searchString) {
+                    filter.name = { $regex: searchString, $options: 'i' };
                 }
                 const skip = (parseInt(page) - 1) * parseInt(perPage);
                 const [categories, total] = await Promise.all([

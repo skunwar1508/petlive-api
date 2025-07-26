@@ -51,6 +51,8 @@ const updateSubcategorySchema = Joi.object({
 const paginateSchema = Joi.object({
     page: Joi.number().integer().min(1).optional(),
     perPage: Joi.number().integer().min(1).max(100).optional(),
+    searchString: Joi.string().trim().allow('', null),
+    categoryId: Joi.string().allow('', null)
 });
 
 const updateStatusSchema = Joi.object({
@@ -86,7 +88,6 @@ exports.updateSubcategoryValidation = [
 exports.deleteSubcategoryValidation = [validateJoi(idSchema, 'params')];
 
 exports.paginateSubcategoryValidation = [
-    validateJoi(categoryIdSchema, 'params'),
     validateJoi(paginateSchema, 'body'),
 ];
 

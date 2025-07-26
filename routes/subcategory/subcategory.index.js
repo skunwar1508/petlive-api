@@ -58,7 +58,7 @@ router.delete(
 
 // Paginate subcategories (optionally by categoryId)
 router.post(
-    '/paginate/:categoryId?',
+    '/paginate?',
     verifyJWT,
     paginateSubcategoryValidation,
     categoryController.paginate
