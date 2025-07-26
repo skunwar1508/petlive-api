@@ -41,7 +41,7 @@ router.post(
     categoryController.create
 );
 
-router.put(
+router.post(
     '/update/:id',
     verifyJWT,
     updateCategoryValidation,
