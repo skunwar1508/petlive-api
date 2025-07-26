@@ -11,6 +11,11 @@ const categorySchema = new mongoose.Schema({
         type: Boolean,
         default : true
     },
+    description: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     createdAt: {
         type: Date,
         default: Date.now

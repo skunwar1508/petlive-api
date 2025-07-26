@@ -75,7 +75,7 @@ const categoryController = {
         try {
             const newCategory = new category(req.body);
             const savedCategory = await newCategory.save();
-            return apiResponse.successResponseWithData(res, "Category created", savedCategory);
+            return apiResponse.successResponse(res, "Category created", savedCategory);
         } catch (err) {
             return apiResponse.errorMessage(res, 400, err.message);
         }
