@@ -92,7 +92,7 @@ const categoryController = {
                 { new: true, runValidators: true }
             );
             if (!updatedCategory) return apiResponse.errorMessage(res, 404, CMS.Lang_Messages("en", "categorynotfound"));
-            return apiResponse.successResponseWithData(res, "Category updated", updatedCategory);
+            return apiResponse.successResponse(res, "Category updated", updatedCategory);
         } catch (err) {
             return apiResponse.errorMessage(res, 400, err.message);
         }
