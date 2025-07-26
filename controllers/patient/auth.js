@@ -92,7 +92,8 @@ const getProfile = async (req, res) => {
         let user = await patientModel.findOne({ _id: userId, isDeleted: false })
             .populate([
                 { path: "ownerImage", select: "_id path" },
-                { path: "petImages", select: "_id path" }
+                { path: "petImages", select: "_id path" },
+                { path: "petType", select: "_id name" }
             ]);
         // Calculate profile completion percentage based on required fields
         const profileFields = [

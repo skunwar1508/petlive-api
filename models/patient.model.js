@@ -30,9 +30,13 @@ const petSchema = new mongoose.Schema({
     age: {
         type: String,
     },
+    // petType: {
+    //     type: String,
+    //     trim: true,
+    // },
     petType: {
-        type: String,
-        trim: true,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
     },
     gender: {
         type: String,
