@@ -12,6 +12,11 @@ const subCategorySchema = new mongoose.Schema({
         ref: 'Category',
         required: true,
     },
+    description: {
+        type: String,
+        trim: true,
+        default: '',
+    },
     status: {
         type: Boolean,
         default: true,
