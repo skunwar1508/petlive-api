@@ -41,7 +41,7 @@ router.post(
 );
 
 // Update a subcategory (admin only)
-router.put(
+router.post(
     '/update/:id',
     verifyJWT,
     updateSubcategoryValidation,
@@ -65,7 +65,7 @@ router.post(
 );
 
 // Update subcategory status (admin only)
-router.put(
+router.post(
     '/updateStatus/:id',
     verifyJWT,
     updateSubcategoryStatusValidation,
