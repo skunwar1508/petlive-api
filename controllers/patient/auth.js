@@ -80,36 +80,46 @@ const lastStep = async (req, res) => {
 
 const getProfile = async (req, res) => {
     try {
-        let user = await patientModel.findOne({ _id: req.doc.id, isDeleted: false })
+        let userId;
+        let role = req.doc.role;
+        if (role === roles.patient) {
+            userId = req.doc.id;
+        } else if (role === roles.admin) {
+            userId = req.params.id;
+        } else {
+            return apiResponse.errorMessage(res, 403, "Access denied.");
+        }
+        let user = await patientModel.findOne({ _id: userId, isDeleted: false })
             .populate([
                 { path: "ownerImage", select: "_id path" },
                 { path: "petImages", select: "_id path" }
             ]);
-            // Calculate profile completion percentage based on required fields
-            const profileFields = [
-                'phone',
-                'email',
-                'ownerName',
-                'ownerGender',
-                'ownerDob',
-                'ownerImage',
-                'name',
-                'age',
-                'petType',
-                'gender',
-                'interestFor',
-                'reasonToFind',
-                'weight',
-                'breed',
-                'color',
-                'activityLevel',
-                'dietaryPreference',
-                'trainingBehaviour',
-                'outdoorHabits',
-                'petImages'
-            ];
+        // Calculate profile completion percentage based on required fields
+        const profileFields = [
+            'phone',
+            'email',
+            'ownerName',
+            'ownerGender',
+            'ownerDob',
+            'ownerImage',
+            'name',
+            'age',
+            'petType',
+            'gender',
+            'interestFor',
+            'reasonToFind',
+            'weight',
+            'breed',
+            'color',
+            'activityLevel',
+            'dietaryPreference',
+            'trainingBehaviour',
+            'outdoorHabits',
+            'petImages'
+        ];
 
-            let filledFields = 0;
+        let filledFields = 0;
+        if (role === roles.patient) {
             profileFields.forEach(field => {
                 if (Array.isArray(user[field])) {
                     if (user[field] && user[field].length > 0) filledFields++;
@@ -121,6 +131,7 @@ const getProfile = async (req, res) => {
             const profileCompletion = Math.round((filledFields / profileFields.length) * 100);
             user = user.toObject();
             user.profileCompletion = profileCompletion;
+        }
         if (!user) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
 
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
