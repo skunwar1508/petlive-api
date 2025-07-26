@@ -109,6 +109,29 @@ const categoryController = {
         } catch (err) {
             return apiResponse.errorMessage(res, 500, err.message);
         }
+    },
+    async changeStatus(req, res) {
+        if (!req.doc || req.doc.role !== roles.admin) {
+            return apiResponse.errorMessage(res, 403, CMS.Lang_Messages("en", "accessdenied"));
+        }
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+            if (typeof status !== "boolean") {
+                return apiResponse.errorMessage(res, 400, "Invalid status value");
+            }
+            const updatedCategory = await category.findByIdAndUpdate(
+                id,
+                { status },
+                { new: true, runValidators: true }
+            );
+            if (!updatedCategory) {
+                return apiResponse.errorMessage(res, 404, CMS.Lang_Messages("en", "categorynotfound"));
+            }
+            return apiResponse.successResponse(res, "Category status updated", updatedCategory);
+        } catch (err) {
+            return apiResponse.errorMessage(res, 400, err.message);
+        }
     }
 };
 

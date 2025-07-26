@@ -55,4 +55,10 @@ router.delete(
     categoryController.delete
 );
 
+router.post(
+    '/status/:id',
+    verifyJWT,
+    categoryController.changeStatus
+);
+
 module.exports = router;
