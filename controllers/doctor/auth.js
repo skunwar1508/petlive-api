@@ -19,10 +19,10 @@ const login = async (req, res) => {
         if (!doctor) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         }
-        if (doctor.approveProfile === "rejected") {
+        if (doctor.approveProfile === "Rejected") {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profileRejected"));
         }
-        if (doctor.approveProfile === "pending") {
+        if (doctor.approveProfile === "Pending") {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profilePending"));
         }
 
@@ -59,7 +59,7 @@ const verifySignUpOTP = async (req, res) => {
             if (otp.length === 0) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
 
             if (otp[0].otp === requestData.otp) {
-                let doctor = await doctorModel.findOne({ email: requestData.email.toLowerCase(), isDeleted: false, approveProfile: { $ne: "rejected" } }).select("-password");
+                let doctor = await doctorModel.findOne({ email: requestData.email.toLowerCase(), isDeleted: false, approveProfile: { $ne: "Rejected" } }).select("-password");
                 if (doctor.isProfileCompleted === true) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistemail"));
 
                 console.log(doctor)
@@ -94,7 +94,7 @@ const resendOTP = async (req, res) => {
             email: requestData.email.toLowerCase(),
             isDeleted: false,
             isProfileCompleted: false,
-            approveProfile: { $ne: "rejected" },
+            approveProfile: { $ne: "Rejected" },
         });
 
         if (!existingDoctor) {
@@ -132,7 +132,7 @@ const signup = async (req, res) => {
             // _id: { $ne: requestData.id },
             email: requestData.email.toLowerCase(),
             isDeleted: false,
-            approveProfile: { $ne: "rejected" }
+            approveProfile: { $ne: "Rejected" }
         });
 
         if (existingDoctor) {
@@ -210,7 +210,7 @@ const signupStep1 = async (req, res) => {
     // update profileImage
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "Rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.profileImage = requestData.profileImage;
         if (!doctor?.isProfileCompleted) {
@@ -231,7 +231,7 @@ const signupStep2 = async (req, res) => {
     // update gender
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "Rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.gender = requestData.gender;
         if (!doctor?.isProfileCompleted) {
@@ -249,7 +249,7 @@ const signupStep3 = async (req, res) => {
     // update age
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "Rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.dob = requestData.dob;
         if (!doctor?.isProfileCompleted) {
@@ -268,7 +268,7 @@ const signupStep4 = async (req, res) => {
     // update experience, registrationNo, licenceImage
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "Rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.experience = requestData.experience;
         doctor.registrationNo = requestData.registrationNo;
@@ -288,7 +288,7 @@ const signupStep5 = async (req, res) => {
     // update animalPreference
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "Rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.animalPreference = requestData.animalPreference;
         if (!doctor?.isProfileCompleted) {
@@ -306,7 +306,7 @@ const signupStep6 = async (req, res) => {
     // update primarySpecialisation, otherSpecialisation
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "Rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.primarySpecialisation = requestData.primarySpecialisation;
         doctor.otherSpecialisation = requestData.otherSpecialisation;
@@ -326,7 +326,7 @@ const signupStep7 = async (req, res) => {
     // update bio
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "Rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.bio = requestData.bio;
         if (!doctor?.isProfileCompleted) {
@@ -344,7 +344,7 @@ const signupStep8 = async (req, res) => {
     // update services
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "Rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.services = requestData.services; // expects array or object of services
         if (!doctor?.isProfileCompleted) {
