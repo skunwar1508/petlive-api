@@ -136,6 +136,9 @@ const signup = async (req, res) => {
         });
 
         if (existingDoctor) {
+            if (existingDoctor?.isProfileCompleted) {
+                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistemail"));
+            }
             if (!existingDoctor.isProfileCompleted) {
                 let otpCode = Math.floor(100000 + Math.random() * 9000);
                 let newOtp = new otpModel({
@@ -210,7 +213,7 @@ const signupStep1 = async (req, res) => {
         let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.profileImage = requestData.profileImage;
-        if(!doctor?.isProfileCompleted){
+        if (!doctor?.isProfileCompleted) {
             doctor.lastStep = 2;
         }
         await doctor.save();
@@ -231,7 +234,7 @@ const signupStep2 = async (req, res) => {
         let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.gender = requestData.gender;
-        if(!doctor?.isProfileCompleted){
+        if (!doctor?.isProfileCompleted) {
             doctor.lastStep = 3;
         }
         await doctor.save();
@@ -249,7 +252,7 @@ const signupStep3 = async (req, res) => {
         let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.dob = requestData.dob;
-        if(!doctor?.isProfileCompleted){
+        if (!doctor?.isProfileCompleted) {
             doctor.lastStep = 4;
         }
         doctor.isProfileCompleted = true;
@@ -270,7 +273,7 @@ const signupStep4 = async (req, res) => {
         doctor.experience = requestData.experience;
         doctor.registrationNo = requestData.registrationNo;
         doctor.licenceImage = requestData.licenceImage;
-        if(!doctor?.isProfileCompleted){
+        if (!doctor?.isProfileCompleted) {
             doctor.lastStep = 5;
         };
         await doctor.save();
@@ -288,7 +291,7 @@ const signupStep5 = async (req, res) => {
         let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.animalPreference = requestData.animalPreference;
-        if(!doctor?.isProfileCompleted){
+        if (!doctor?.isProfileCompleted) {
             doctor.lastStep = 6;
         }
         await doctor.save();
@@ -308,7 +311,7 @@ const signupStep6 = async (req, res) => {
         doctor.primarySpecialisation = requestData.primarySpecialisation;
         doctor.otherSpecialisation = requestData.otherSpecialisation;
         doctor.services = requestData.services; // expects array or object of services
-        if(!doctor?.isProfileCompleted){
+        if (!doctor?.isProfileCompleted) {
             doctor.lastStep = 7;
         }
         await doctor.save();
@@ -326,7 +329,7 @@ const signupStep7 = async (req, res) => {
         let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.bio = requestData.bio;
-        if(!doctor?.isProfileCompleted){
+        if (!doctor?.isProfileCompleted) {
             doctor.lastStep = 8;
         }
         await doctor.save();
@@ -344,7 +347,7 @@ const signupStep8 = async (req, res) => {
         let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.services = requestData.services; // expects array or object of services
-        if(!doctor?.isProfileCompleted){
+        if (!doctor?.isProfileCompleted) {
             doctor.lastStep = 9;
         }
         await doctor.save();
@@ -401,7 +404,7 @@ const pagination = async (req, res) => {
                 filter.approveProfile = verificationStatus;
             }
         }
-        console.log("Filter:", filter); 
+        console.log("Filter:", filter);
         // Total count for pagination
         const totalDoctors = await doctorModel.countDocuments(filter);
 
