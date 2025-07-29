@@ -207,7 +207,7 @@ const signupStep1 = async (req, res) => {
     // update profileImage
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.profileImage = requestData.profileImage;
         doctor.lastStep = 2;
@@ -226,7 +226,7 @@ const signupStep2 = async (req, res) => {
     // update gender
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.gender = requestData.gender;
         doctor.lastStep = 3;
@@ -242,10 +242,11 @@ const signupStep3 = async (req, res) => {
     // update age
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.age = requestData.age;
         doctor.lastStep = 4;
+        doctor.isProfileCompleted = true;
         await doctor.save();
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
     } catch (error) {
@@ -258,7 +259,7 @@ const signupStep4 = async (req, res) => {
     // update experience, registrationNo, licenceImage
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.experience = requestData.experience;
         doctor.registrationNo = requestData.registrationNo;
@@ -276,7 +277,7 @@ const signupStep5 = async (req, res) => {
     // update animalPreference
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.animalPreference = requestData.animalPreference;
         doctor.lastStep = 6;
@@ -292,10 +293,11 @@ const signupStep6 = async (req, res) => {
     // update primarySpecialisation, otherSpecialisation
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.primarySpecialisation = requestData.primarySpecialisation;
         doctor.otherSpecialisation = requestData.otherSpecialisation;
+        services = requestData.services; // expects array or object of services
         doctor.lastStep = 7;
         await doctor.save();
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
@@ -309,7 +311,7 @@ const signupStep7 = async (req, res) => {
     // update bio
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.bio = requestData.bio;
         doctor.lastStep = 8;
@@ -325,10 +327,9 @@ const signupStep8 = async (req, res) => {
     // update services
     try {
         const requestData = req.body;
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, isProfileCompleted: false, approveProfile: { $ne: "rejected" } });
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         doctor.services = requestData.services; // expects array or object of services
-        doctor.isProfileCompleted = true;
         doctor.lastStep = 10;
         await doctor.save();
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
@@ -341,7 +342,7 @@ const signupStep8 = async (req, res) => {
 // ==========================================================================
 const getProfile = async (req, res) => {
     try {
-        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false }).select("-password").populate(["profileImage", "licenceImage"]);
+        let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false }).select("-password").populate(["profileImage", "licenceImage", "services"]);
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
     } catch (error) {
