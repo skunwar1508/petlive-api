@@ -244,7 +244,7 @@ const signupStep3 = async (req, res) => {
         const requestData = req.body;
         let doctor = await doctorModel.findOne({ _id: req.doc.id, isDeleted: false, approveProfile: { $ne: "rejected" } });
         if (!doctor) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
-        doctor.age = requestData.age;
+        doctor.dob = requestData.dob;
         doctor.lastStep = 4;
         doctor.isProfileCompleted = true;
         await doctor.save();
