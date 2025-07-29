@@ -150,7 +150,7 @@ const signUpStep5Validation = async (req, res, next) => {
 const signUpStep6Validation = async (req, res, next) => {
     const schema = Joi.object({
         primarySpecialisation: Joi.string(),
-        otherSpecialisation: Joi.array().items(Joi.string()),
+        otherSpecialisation: Joi.string(),
         services: Joi.array().items(Joi.string()).required(), // expects array or object of services
     });
 
