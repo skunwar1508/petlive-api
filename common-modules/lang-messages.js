@@ -59,6 +59,7 @@ let langauge = {
         notConnected : "Doctor is not connected with patient",
         profileRejected: "Profile rejected by admin. Please contact.",
         profilePending: "Profile is pending for approval.",
+        invalidcredentials : "Invalid credentials.",
         otpsent: "OTP has been sent successfully.",
         validationErrorWithData: "Validation error: Missing or invalid data.",
         invalid_patient_or_amount: "Invalid patient ID or amount.",
@@ -69,6 +70,7 @@ let langauge = {
         invalidpatientid: "Invalid patient ID.",
         invaliddoctorid: "Invalid doctor ID.",
         invalidpatientid : "Invalid patient ID.",
+        passwordreset: "Password reset successfully.",
     },
 };
 

@@ -621,6 +621,65 @@ const doctorCreate = async (req, res) => {
     }
 };
 
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return apiResponse.validationErrorWithData(res, "Email is required");
+        }
+        const doctor = await doctorModel.findOne({ email: email.toLowerCase(), isDeleted: false });
+        if (!doctor) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        }
+        const otpCode = Math.floor(100000 + Math.random() * 9000);
+        const newOtp = new otpModel({
+            otp: otpCode,
+            email: email.toLowerCase(),
+            usedFor: "FORGOT_PASSWORD",
+        });
+        await newOtp.save();
+        if (process.env.MODE === "development") {
+            return apiResponse.successResponse(res, `An OTP ${otpCode} has been sent to your email ${email}`, { otp: otpCode });
+        } else {
+            // Add logic to send OTP via email service
+            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "otpsentemail"));
+        }
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const verifyForgotPasswordOTP = async (req, res) => {
+    try {
+        const { email, otp, password, confirmPassword } = req.body;
+        if (!email || !otp || !password || !confirmPassword) {
+            return apiResponse.validationErrorWithData(res, "Email, OTP, password and confirm password are required");
+        }
+        if (password !== confirmPassword) {
+            return apiResponse.validationErrorWithData(res, "Password and confirm password do not match");
+        }
+        const otpRecord = await otpModel.find({ email: email.toLowerCase(), usedFor: "FORGOT_PASSWORD" }).sort({ createdAt: -1 }).limit(1);
+        if (otpRecord.length === 0) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
+        }
+        if (otpRecord[0].otp !== otp) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
+        }
+        const doctor = await doctorModel.findOne({ email: email.toLowerCase(), isDeleted: false });
+        if (!doctor) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        }
+        doctor.password = await bcrypt.hash(password, 10);
+        await doctor.save();
+        await otpModel.deleteOne({ _id: otpRecord[0]._id });
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "passwordreset"), { email: doctor.email });
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
 module.exports = {
     login,
     signup,
@@ -641,5 +700,7 @@ module.exports = {
     changeStatus,
     consultationFeeUpdate,
     updateDoctorProfile,
-    profileStatusUpdate
+    profileStatusUpdate,
+    forgotPassword,
+    verifyForgotPasswordOTP
 };

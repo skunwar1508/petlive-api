@@ -12,6 +12,8 @@ const router = express.Router();
 console.log("authController", authController);
 
 router.post('/login', validation.loginValidation, authController.login);
+router.post('/forgot', authController.forgotPassword);
+router.post('/forgot/verify', validation.forgotPasswordValidation, authController.verifyForgotPasswordOTP);
 router.post('/signup', validation.signUpStepValidation, authController.signup);
 router.post('/signup/verify', validation.signUpVerifyValidation, authController.verifySignUpOTP);
 router.post('/signup/resend', validation.signUpResendValidation, authController.resendOTP);

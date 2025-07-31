@@ -252,6 +252,20 @@ const updateProfileValidation = async (req, res, next) => {
     }
     next();
 };
+const forgotPasswordValidation = async (req, res, next) => {
+    const schema = Joi.object({
+        email: Joi.string().email().required(),
+        otp: Joi.string().length(6).pattern(/^[0-9]+$/).required(),
+        newPassword: Joi.string().min(6).required(),
+        confirmPassword: Joi.string().valid(Joi.ref('newPassword')).required()
+    });
+    const value = schema.validate(req.body);
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    next();
+};
 // ==========================================================
 // ==========================================================
 
@@ -270,6 +284,7 @@ module.exports = {
     signUpStep8Validation,
     paginValidation,
     consultationValidation,
-    updateProfileValidation
+    updateProfileValidation,
+    forgotPasswordValidation
 };
 
