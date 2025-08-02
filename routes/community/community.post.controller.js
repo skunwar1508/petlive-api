@@ -168,13 +168,20 @@ async function paginatePosts(req, res) {
                                 'authorDetails.profileImage': { $arrayElemAt: ['$authorProfileImage', 0] }
                             }
                         },
-                        { $project: { authorProfileImage: 0 } }
+                        {
+                            $project: {
+                                'authorDetails._id': 1,
+                                'authorDetails.name': 1,
+                                'authorDetails.profileImage._id': 1,
+                                'authorDetails.profileImage.path': 1
+                            }
+                        }
                     ],
                     patientPosts: [
                         { $match: { authorRole: 'patient' } },
                         {
                             $lookup: {
-                                from: 'patients',
+                                from: 'pets',
                                 localField: 'author',
                                 foreignField: '_id',
                                 as: 'authorDetails'
@@ -184,17 +191,25 @@ async function paginatePosts(req, res) {
                         {
                             $lookup: {
                                 from: 'images',
-                                localField: 'authorDetails.profileImage',
+                                localField: 'authorDetails.ownerImage',
                                 foreignField: '_id',
-                                as: 'authorProfileImage'
+                                as: 'ownerImage'
                             }
                         },
                         {
                             $addFields: {
-                                'authorDetails.profileImage': { $arrayElemAt: ['$authorProfileImage', 0] }
+                                'authorDetails.ownerImage': { $arrayElemAt: ['$ownerImage', 0] }
                             }
                         },
-                        { $project: { authorProfileImage: 0 } }
+                        {
+                            $project: {
+                                'authorDetails._id': 1,
+                                'authorDetails.ownerImage._id': 1,
+                                'authorDetails.ownerImage.path': 1,
+                                'authorDetails.ownerName': 1,
+                                'authorDetails.name': 1
+                            }
+                        }
                     ]
                 }
             },
@@ -296,7 +311,7 @@ async function paginatePosts(req, res) {
                     },
                     isMyPost: {
                         $cond: {
-                            if: { $eq: ['$author', mongoose.Types.ObjectId(userId)] },
+                            if: { $eq: ['$authorDetails._id', mongoose.Types.ObjectId(userId)] },
                             then: true,
                             else: false
                         }
