@@ -30,13 +30,17 @@ async function createPost(req, res) {
         const savednewPost = await newPost.save();
         if (savednewPost.authorRole === 'patient') {
             await savednewPost.populate([
-            { path: 'image', select: '_id path' },
-            { 
-                path: 'author', 
-                select: 'name ownerImage ownerName',
-                populate: { path: 'ownerImage', select: '_id path' }
-            }
+                { path: 'image', select: '_id path' },
+                { 
+                    path: 'author', 
+                    select: 'name ownerImage ownerName',
+                    populate: { path: 'ownerImage', select: '_id path' }
+                }
             ]);
+            // Convert ownerImage array to single object if present
+            if (savednewPost.author && Array.isArray(savednewPost.author.ownerImage)) {
+                savednewPost.author.ownerImage = savednewPost.author.ownerImage[0] || null;
+            }
         } else {
             await savednewPost.populate([
             { path: 'image', select: '_id path' },
