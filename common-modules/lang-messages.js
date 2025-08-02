@@ -75,6 +75,17 @@ let langauge = {
         categorynotfound: "Category not found.",
         deleted: "Deleted successfully.",
         postSuccess : "Post created successfully.",
+        postNotFound: "Post not found.",
+        alreadyLiked: "Post already liked by user.",
+        likeSuccess: "Post liked successfully.",
+        alreadyDisliked: "Post already disliked by user.",
+        dislikeSuccess: "Post disliked successfully.",
+        alreadyReported: "Post already reported by user.",
+        reportSuccess: "Post reported successfully.",
+        postIdsRequired: "Post IDs required for views.",
+        viewSuccess: "Post view registered successfully.",
+        deleteSuccess: "Post deleted successfully.",
+        notAuthorized: "User not authorized to perform action.",
     },
 };
 

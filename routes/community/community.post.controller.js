@@ -5,6 +5,9 @@ const CMS = require("../../common-modules/index");
 const escape = require("../../common-modules/escape.js");
 const { default: mongoose } = require('mongoose');
 
+
+
+
 async function createPost(req, res) {
     try {
         const author = req.doc.id; // Assuming req.doc contains the user information
@@ -44,7 +47,6 @@ async function createPost(req, res) {
             }
             ]);
         }
-        console.log("savednewPost", savednewPost);
 
         const responseObj = {
             _id: savednewPost._id,

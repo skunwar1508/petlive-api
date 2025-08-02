@@ -108,4 +108,4 @@ const doctorSchema = new Schema({
 });
 
 // Export the Doctor model
-module.exports = mongoose.model('Doctor', doctorSchema);
+module.exports = mongoose.model('doctor', doctorSchema);

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const HelpdeskChatSchema = new mongoose.Schema({
     userRole: {
         type: String,
-        enum: ['patient', 'Doctor'],
+        enum: ['patient', 'doctor'],
         required: true,
     },
     userId: {
