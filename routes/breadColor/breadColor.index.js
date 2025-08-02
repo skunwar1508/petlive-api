@@ -66,7 +66,7 @@ router.post(
 
 // Update bread color status
 router.post(
-    '/updateStatus/:id',
+    '/status/:id',
     verifyJWT,
     updateBreadColorStatusValidation,
     breadColorController.updateStatus
