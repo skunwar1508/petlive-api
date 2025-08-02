@@ -48,10 +48,7 @@ async function createPost(req, res) {
         const responseObj = {
             _id: savednewPost._id,
             content: savednewPost.content,
-            image: savednewPost.image ? {
-                _id: savednewPost.image._id,
-                path: savednewPost.image.path
-            } : null,
+            image: savednewPost?.image || null,
             authorRole: savednewPost.authorRole,
             communityId: savednewPost.communityId,
             author: savednewPost.author,
@@ -61,7 +58,7 @@ async function createPost(req, res) {
             authorDetails: {
                 _id: savednewPost.author._id,
                 name: savednewPost.author.name,
-                profileImage: savednewPost.author.profileImage ? {
+                profileImage: savednewPost.author?.profileImage ? {
                     _id: savednewPost.author.profileImage._id,
                     path: savednewPost.author.profileImage.path
                 } : null
