@@ -48,7 +48,10 @@ async function createPost(req, res) {
         const responseObj = {
             _id: savednewPost._id,
             content: savednewPost.content,
-            image: imageObj,
+            image: savednewPost.image ? {
+                _id: savednewPost.image._id,
+                path: savednewPost.image.path
+            } : null,
             authorRole: savednewPost.authorRole,
             communityId: savednewPost.communityId,
             author: savednewPost.author,
@@ -73,10 +76,9 @@ async function createPost(req, res) {
             isMyPost: true
         };
 
-        return apiResponses.successResponse(res, CMS.Lang_Messages("en", "postSuccess"), responseObj);
 
         if (savednewPost) {
-            return apiResponses.successResponse(res, CMS.Lang_Messages("en", "postSuccess"), savednewPost);
+            return apiResponses.successResponse(res, CMS.Lang_Messages("en", "postSuccess"), responseObj);
         }
 
         return apiResponses.somethingWentWrongMsg(res);
