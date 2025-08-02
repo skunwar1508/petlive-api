@@ -7,6 +7,11 @@ const colorSchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
+    description: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     status: {
         type: Boolean,
         default : true

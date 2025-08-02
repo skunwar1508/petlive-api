@@ -71,6 +71,9 @@ let langauge = {
         invaliddoctorid: "Invalid doctor ID.",
         invalidpatientid : "Invalid patient ID.",
         passwordreset: "Password reset successfully.",
+        accessdenied: "Access denied.",
+        categorynotfound: "Category not found.",
+        deleted: "Deleted successfully.",
     },
 };
 
