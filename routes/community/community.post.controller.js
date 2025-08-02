@@ -28,15 +28,24 @@ async function createPost(req, res) {
             authorRole: role
         });
         let savednewPost = await newPost.save();
+
+
+
         if (savednewPost.authorRole === 'patient') {
             await savednewPost.populate([
                 { path: 'image', select: '_id path' },
                 {
                     path: 'author',
                     select: 'name ownerImage ownerName',
-                    populate: { path: 'ownerImage', select: '_id path' }
+                    populate: { path: 'ownerImage', select: '_id path', justOne: true }
                 }
             ]);
+            // Ensure ownerImage is a single object, not an array
+            if (Array.isArray(savednewPost.author) && savednewPost.author.length > 0 && Array.isArray(savednewPost.author[0].ownerImage)) {
+                savednewPost.author[0].ownerImage = savednewPost.author[0].ownerImage[0] || null;
+            } else if (savednewPost.author && Array.isArray(savednewPost.author.ownerImage)) {
+                savednewPost.author.ownerImage = savednewPost.author.ownerImage[0] || null;
+            }
         } else {
             await savednewPost.populate([
                 { path: 'image', select: '_id path' },
