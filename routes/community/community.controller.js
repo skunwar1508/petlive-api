@@ -55,7 +55,7 @@ async function getCommunity(req, res) {
 
         if (communityData) {
             const isMember = communityData.members.some(
-            member => member.providerId?.toString() === req.doc.id || member.patientId?.toString() === req.doc.id
+                member => member.providerId?.toString() === req.doc.id || member.patientId?.toString() === req.doc.id
             );
             communityData._doc.isMember = isMember; // Add the flag to the response
         }
@@ -97,12 +97,12 @@ async function getAllCommunitiesJoined(req, res) {
 
         if (role === roles.patient) {
             const communitiesData = await communityModel.find({
-            isDeleted: false,
-            "members.patientId": req.doc.id
+                isDeleted: false,
+                "members.patientId": req.doc.id
             });
 
             if (communitiesData) {
-            return apiResponses.successResponse(res, "Success", communitiesData);
+                return apiResponses.successResponse(res, "Success", communitiesData);
             }
 
             return apiResponses.errorMessage(res, 400, `Communities ${CMS.Lang_Messages("en", "notF")}`);
@@ -153,7 +153,7 @@ async function getAllCommunitiesSearch(req, res) {
 
         if (role === roles.patient || role === roles.admin) {
             const searchRegex = { $regex: ".*" + req.body.searchString + ".*", $options: "i" };
-            
+
 
             const [joinedCommunities, unJoinedCommunities] = await Promise.all([
                 communityModel.find({
@@ -269,14 +269,30 @@ async function paginateCommunity(req, res) {
             ];
         }
         if (role === roles.doctor && req.body.type === "my") {
-            con["createdById"] = req.doc.id;
+            con["members.providerId"] = req.doc.id;
         }
+        if (role === roles.patient && req.body.type === "my") {
+            con["members.patientId"] = req.doc.id;
+        }
+
         console.log(role, roles.doctor, req.body.type, "my");
 
         const communities = await communityModel.find(con, {}, skipCondition).populate(["image", "createdById"]);
         const totalCount = await communityModel.countDocuments(con);
-
-        return apiResponses.successResWithPagination(res, CMS.Lang_Messages("en", "success"), communities, totalCount);
+        const communitiesWithFlag = communities.map(community => {
+            const isJoined = community.members.some(
+                member => {
+                    if (role === roles.patient) {
+                        return member.patientId?.toString() === req.doc.id;
+                    } else if (role === roles.doctor) {
+                        return member.providerId?.toString() === req.doc.id;
+                    }
+                }
+            );
+            delete community._doc.members; // Remove members from response
+            return { ...community._doc, isJoined };
+        });
+        return apiResponses.successResWithPagination(res, CMS.Lang_Messages("en", "success"), communitiesWithFlag, totalCount);
     } catch (error) {
         console.error(error);
         return apiResponses.somethingWentWrongMsg(res);
