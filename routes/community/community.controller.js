@@ -289,8 +289,9 @@ async function paginateCommunity(req, res) {
                     }
                 }
             );
+            let joinedMembers = community.members?.length || 0;
             delete community._doc.members; // Remove members from response
-            return { ...community._doc, isJoined };
+            return { ...community._doc, isJoined, joinedMembers };
         });
         return apiResponses.successResWithPagination(res, CMS.Lang_Messages("en", "success"), communitiesWithFlag, totalCount);
     } catch (error) {
