@@ -15,7 +15,7 @@ async function createPost(req, res) {
             return apiResponses.errorMessage(res, 400, "Content or image is required");
         }
 
-        const role = req.doc.role == 'admin' ? 'Admin' : req.doc.role;
+        const role = authorRole == 'admin' ? 'Admin' : authorRole;
         const newPost = new Post({
             content: requestData.content,
             image: requestData?.image || null,
@@ -25,9 +25,56 @@ async function createPost(req, res) {
             authorRole: role
         });
         const savednewPost = await newPost.save();
-        if (savednewPost.image) {
-            await savednewPost.populate('image');
+        if (savednewPost.authorRole === 'patient') {
+            await savednewPost.populate([
+            { path: 'image', select: '_id path' },
+            { 
+                path: 'author', 
+                select: 'name profileImage ownerName',
+                populate: { path: 'profileImage', select: '_id path' }
+            }
+            ]);
+        } else {
+            await savednewPost.populate([
+            { path: 'image', select: '_id path' },
+            { 
+                path: 'author', 
+                select: 'name ownerImage ownerName',
+                populate: { path: 'ownerImage', select: '_id path' }
+            }
+            ]);
         }
+
+        const responseObj = {
+            _id: savednewPost._id,
+            content: savednewPost.content,
+            image: imageObj,
+            authorRole: savednewPost.authorRole,
+            communityId: savednewPost.communityId,
+            author: savednewPost.author,
+            isAnonymouse: savednewPost.isAnonymouse,
+            createdAt: savednewPost.createdAt,
+            updatedAt: savednewPost.updatedAt,
+            authorDetails: {
+                _id: savednewPost.author._id,
+                name: savednewPost.author.name,
+                profileImage: savednewPost.author.profileImage ? {
+                    _id: savednewPost.author.profileImage._id,
+                    path: savednewPost.author.profileImage.path
+                } : null
+            },
+            commentCount: 0,
+            likeCount: 0,
+            dislikeCount: 0,
+            selfLiked: false,
+            selfDisliked: false,
+            viewsCount: 0,
+            selfViews: false,
+            isMyPost: true
+        };
+
+        return apiResponses.successResponse(res, CMS.Lang_Messages("en", "postSuccess"), responseObj);
+
         if (savednewPost) {
             return apiResponses.successResponse(res, CMS.Lang_Messages("en", "postSuccess"), savednewPost);
         }
