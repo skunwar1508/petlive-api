@@ -27,28 +27,24 @@ async function createPost(req, res) {
             author,
             authorRole: role
         });
-        const savednewPost = await newPost.save();
+        let savednewPost = await newPost.save();
         if (savednewPost.authorRole === 'patient') {
             await savednewPost.populate([
                 { path: 'image', select: '_id path' },
-                { 
-                    path: 'author', 
+                {
+                    path: 'author',
                     select: 'name ownerImage ownerName',
                     populate: { path: 'ownerImage', select: '_id path' }
                 }
             ]);
-            // Convert ownerImage array to single object if present
-            if (savednewPost.author && Array.isArray(savednewPost.author.ownerImage)) {
-                savednewPost.author.ownerImage = savednewPost.author.ownerImage[0] || null;
-            }
         } else {
             await savednewPost.populate([
-            { path: 'image', select: '_id path' },
-            { 
-                path: 'author', 
-                select: 'name profileImage ownerName',
-                populate: { path: 'profileImage', select: '_id path' }
-            }
+                { path: 'image', select: '_id path' },
+                {
+                    path: 'author',
+                    select: 'name profileImage ownerName',
+                    populate: { path: 'profileImage', select: '_id path' }
+                }
             ]);
         }
 
@@ -58,7 +54,7 @@ async function createPost(req, res) {
             image: savednewPost?.image || null,
             authorRole: savednewPost.authorRole,
             communityId: savednewPost.communityId,
-            authorDetails: savednewPost.author,
+            authorDetails: savednewPost?.author[0] || savednewPost.author,
             isAnonymouse: savednewPost.isAnonymouse,
             createdAt: savednewPost.createdAt,
             updatedAt: savednewPost.updatedAt,
@@ -188,209 +184,209 @@ async function paginatePosts(req, res) {
             { $skip: skip },
             { $limit: perPage },
             {
-            $facet: {
-                doctorPosts: [
-                { $match: { authorRole: 'doctor' } },
-                {
-                    $lookup: {
-                    from: 'doctors',
-                    localField: 'author',
-                    foreignField: '_id',
-                    as: 'authorDetails'
-                    }
-                },
-                { $unwind: { path: '$authorDetails', preserveNullAndEmptyArrays: true } },
-                {
-                    $lookup: {
-                    from: 'images',
-                    localField: 'authorDetails.profileImage',
-                    foreignField: '_id',
-                    as: 'authorProfileImage'
-                    }
-                },
-                {
-                    $addFields: {
-                    'authorDetails.profileImage': { $arrayElemAt: ['$authorProfileImage', 0] }
-                    }
-                },
-                {
-                    $project: {
-                    _id: 1,
-                    content: 1,
-                    communityId: 1,
-                    author: 1,
-                    authorRole: 1,
-                    image: 1,
-                    createdAt: 1,
-                    updatedAt: 1,
-                    likes: 1,
-                    dislikes: 1,
-                    views: 1,
-                    reports: 1,
-                    isAnonymouse: 1,
-                    authorDetails: {
-                        _id: '$authorDetails._id',
-                        name: '$authorDetails.name',
-                        profileImage: {
-                        _id: '$authorDetails.profileImage._id',
-                        path: '$authorDetails.profileImage.path'
+                $facet: {
+                    doctorPosts: [
+                        { $match: { authorRole: 'doctor' } },
+                        {
+                            $lookup: {
+                                from: 'doctors',
+                                localField: 'author',
+                                foreignField: '_id',
+                                as: 'authorDetails'
+                            }
+                        },
+                        { $unwind: { path: '$authorDetails', preserveNullAndEmptyArrays: true } },
+                        {
+                            $lookup: {
+                                from: 'images',
+                                localField: 'authorDetails.profileImage',
+                                foreignField: '_id',
+                                as: 'authorProfileImage'
+                            }
+                        },
+                        {
+                            $addFields: {
+                                'authorDetails.profileImage': { $arrayElemAt: ['$authorProfileImage', 0] }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 1,
+                                content: 1,
+                                communityId: 1,
+                                author: 1,
+                                authorRole: 1,
+                                image: 1,
+                                createdAt: 1,
+                                updatedAt: 1,
+                                likes: 1,
+                                dislikes: 1,
+                                views: 1,
+                                reports: 1,
+                                isAnonymouse: 1,
+                                authorDetails: {
+                                    _id: '$authorDetails._id',
+                                    name: '$authorDetails.name',
+                                    profileImage: {
+                                        _id: '$authorDetails.profileImage._id',
+                                        path: '$authorDetails.profileImage.path'
+                                    }
+                                }
+                            }
                         }
-                    }
-                    }
-                }
-                ],
-                patientPosts: [
-                { $match: { authorRole: 'patient' } },
-                {
-                    $lookup: {
-                    from: 'patients',
-                    localField: 'author',
-                    foreignField: '_id',
-                    as: 'authorDetails'
-                    }
-                },
-                { $unwind: { path: '$authorDetails', preserveNullAndEmptyArrays: true } },
-                {
-                    $lookup: {
-                    from: 'images',
-                    localField: 'authorDetails.ownerImage',
-                    foreignField: '_id',
-                    as: 'ownerImage'
-                    }
-                },
-                {
-                    $addFields: {
-                    'authorDetails.ownerImage': { $arrayElemAt: ['$ownerImage', 0] }
-                    }
-                },
-                {
-                    $project: {
-                    _id: 1,
-                    content: 1,
-                    communityId: 1,
-                    author: 1,
-                    authorRole: 1,
-                    image: 1,
-                    createdAt: 1,
-                    updatedAt: 1,
-                    likes: 1,
-                    dislikes: 1,
-                    views: 1,
-                    reports: 1,
-                    isAnonymouse: 1,
-                    authorDetails: {
-                        _id: '$authorDetails._id',
-                        name: '$authorDetails.name',
-                        ownerName: '$authorDetails.ownerName',
-                        ownerImage: {
-                        _id: '$authorDetails.ownerImage._id',
-                        path: '$authorDetails.ownerImage.path'
+                    ],
+                    patientPosts: [
+                        { $match: { authorRole: 'patient' } },
+                        {
+                            $lookup: {
+                                from: 'patients',
+                                localField: 'author',
+                                foreignField: '_id',
+                                as: 'authorDetails'
+                            }
+                        },
+                        { $unwind: { path: '$authorDetails', preserveNullAndEmptyArrays: true } },
+                        {
+                            $lookup: {
+                                from: 'images',
+                                localField: 'authorDetails.ownerImage',
+                                foreignField: '_id',
+                                as: 'ownerImage'
+                            }
+                        },
+                        {
+                            $addFields: {
+                                'authorDetails.ownerImage': { $arrayElemAt: ['$ownerImage', 0] }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 1,
+                                content: 1,
+                                communityId: 1,
+                                author: 1,
+                                authorRole: 1,
+                                image: 1,
+                                createdAt: 1,
+                                updatedAt: 1,
+                                likes: 1,
+                                dislikes: 1,
+                                views: 1,
+                                reports: 1,
+                                isAnonymouse: 1,
+                                authorDetails: {
+                                    _id: '$authorDetails._id',
+                                    name: '$authorDetails.name',
+                                    ownerName: '$authorDetails.ownerName',
+                                    ownerImage: {
+                                        _id: '$authorDetails.ownerImage._id',
+                                        path: '$authorDetails.ownerImage.path'
+                                    }
+                                }
+                            }
                         }
-                    }
-                    }
+                    ]
                 }
-                ]
-            }
             },
             {
-            $addFields: {
-                posts: { $concatArrays: ['$doctorPosts', '$patientPosts'] }
-            }
+                $addFields: {
+                    posts: { $concatArrays: ['$doctorPosts', '$patientPosts'] }
+                }
             },
             { $unwind: '$posts' },
             { $replaceRoot: { newRoot: '$posts' } },
             {
-            $lookup: {
-                from: 'images',
-                localField: 'image',
-                foreignField: '_id',
-                as: 'image'
-            }
-            },
-            {
-            $addFields: {
-                image: { $arrayElemAt: ['$image', 0] }
-            }
-            },
-            {
-            $lookup: {
-                from: "community_comment_replies",
-                localField: "_id",
-                foreignField: "communityPostObjId",
-                as: "comments"
-            }
-            },
-            {
-            $addFields: {
-                commentCount: { $size: "$comments" },
-                likeCount: { $size: { $ifNull: ['$likes', []] } },
-                dislikeCount: { $size: { $ifNull: ['$dislikes', []] } },
-                selfLiked: {
-                $in: [
-                    mongoose.Types.ObjectId(userId),
-                    {
-                    $map: {
-                        input: { $ifNull: ['$likes', []] },
-                        as: 'like',
-                        in: '$$like.userId'
-                    }
-                    }
-                ]
-                },
-                selfDisliked: {
-                $in: [
-                    mongoose.Types.ObjectId(userId),
-                    {
-                    $map: {
-                        input: { $ifNull: ['$dislikes', []] },
-                        as: 'dislike',
-                        in: '$$dislike.userId'
-                    }
-                    }
-                ]
-                },
-                viewsCount: { $size: { $ifNull: ['$views', []] } },
-                selfViews: {
-                $in: [
-                    mongoose.Types.ObjectId(userId),
-                    {
-                    $map: {
-                        input: { $ifNull: ['$views', []] },
-                        as: 'view',
-                        in: '$$view.userId'
-                    }
-                    }
-                ]
-                },
-                isMyPost: {
-                $eq: ['$author', mongoose.Types.ObjectId(userId)]
+                $lookup: {
+                    from: 'images',
+                    localField: 'image',
+                    foreignField: '_id',
+                    as: 'image'
                 }
-            }
             },
             {
-            $project: {
-                _id: 1,
-                content: 1,
-                communityId: 1,
-                author: 1,
-                authorRole: 1,
-                authorDetails: 1,
-                createdAt: 1,
-                updatedAt: 1,
-                image: {
-                _id: '$image._id',
-                path: '$image.path'
-                },
-                likeCount: 1,
-                dislikeCount: 1,
-                selfLiked: 1,
-                selfDisliked: 1,
-                isAnonymouse: 1,
-                selfViews: 1,
-                isMyPost: 1,
-                viewsCount: 1,
-                commentCount: 1
-            }
+                $addFields: {
+                    image: { $arrayElemAt: ['$image', 0] }
+                }
+            },
+            {
+                $lookup: {
+                    from: "community_comment_replies",
+                    localField: "_id",
+                    foreignField: "communityPostObjId",
+                    as: "comments"
+                }
+            },
+            {
+                $addFields: {
+                    commentCount: { $size: "$comments" },
+                    likeCount: { $size: { $ifNull: ['$likes', []] } },
+                    dislikeCount: { $size: { $ifNull: ['$dislikes', []] } },
+                    selfLiked: {
+                        $in: [
+                            mongoose.Types.ObjectId(userId),
+                            {
+                                $map: {
+                                    input: { $ifNull: ['$likes', []] },
+                                    as: 'like',
+                                    in: '$$like.userId'
+                                }
+                            }
+                        ]
+                    },
+                    selfDisliked: {
+                        $in: [
+                            mongoose.Types.ObjectId(userId),
+                            {
+                                $map: {
+                                    input: { $ifNull: ['$dislikes', []] },
+                                    as: 'dislike',
+                                    in: '$$dislike.userId'
+                                }
+                            }
+                        ]
+                    },
+                    viewsCount: { $size: { $ifNull: ['$views', []] } },
+                    selfViews: {
+                        $in: [
+                            mongoose.Types.ObjectId(userId),
+                            {
+                                $map: {
+                                    input: { $ifNull: ['$views', []] },
+                                    as: 'view',
+                                    in: '$$view.userId'
+                                }
+                            }
+                        ]
+                    },
+                    isMyPost: {
+                        $eq: ['$author', mongoose.Types.ObjectId(userId)]
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    content: 1,
+                    communityId: 1,
+                    author: 1,
+                    authorRole: 1,
+                    authorDetails: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    image: {
+                        _id: '$image._id',
+                        path: '$image.path'
+                    },
+                    likeCount: 1,
+                    dislikeCount: 1,
+                    selfLiked: 1,
+                    selfDisliked: 1,
+                    isAnonymouse: 1,
+                    selfViews: 1,
+                    isMyPost: 1,
+                    viewsCount: 1,
+                    commentCount: 1
+                }
             }
         ];
 
