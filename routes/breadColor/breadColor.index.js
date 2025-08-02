@@ -41,7 +41,7 @@ router.post(
 );
 
 // Update bread color
-router.put(
+router.post(
     '/update/:id',
     verifyJWT,
     updateBreadColorValidation,
@@ -65,7 +65,7 @@ router.post(
 );
 
 // Update bread color status
-router.put(
+router.post(
     '/updateStatus/:id',
     verifyJWT,
     updateBreadColorStatusValidation,
