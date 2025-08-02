@@ -30,8 +30,8 @@ async function createPost(req, res) {
             { path: 'image', select: '_id path' },
             { 
                 path: 'author', 
-                select: 'name profileImage ownerName',
-                populate: { path: 'profileImage', select: '_id path' }
+                select: 'name ownerImage ownerName',
+                populate: { path: 'ownerImage', select: '_id path' }
             }
             ]);
         } else {
@@ -39,11 +39,12 @@ async function createPost(req, res) {
             { path: 'image', select: '_id path' },
             { 
                 path: 'author', 
-                select: 'name ownerImage ownerName',
-                populate: { path: 'ownerImage', select: '_id path' }
+                select: 'name profileImage ownerName',
+                populate: { path: 'profileImage', select: '_id path' }
             }
             ]);
         }
+        console.log("savednewPost", savednewPost);
 
         const responseObj = {
             _id: savednewPost._id,
@@ -51,18 +52,10 @@ async function createPost(req, res) {
             image: savednewPost?.image || null,
             authorRole: savednewPost.authorRole,
             communityId: savednewPost.communityId,
-            author: savednewPost.author,
+            authorDetails: savednewPost.author,
             isAnonymouse: savednewPost.isAnonymouse,
             createdAt: savednewPost.createdAt,
             updatedAt: savednewPost.updatedAt,
-            authorDetails: {
-                _id: savednewPost.author._id,
-                name: savednewPost.author.name,
-                profileImage: savednewPost.author?.profileImage ? {
-                    _id: savednewPost.author.profileImage._id,
-                    path: savednewPost.author.profileImage.path
-                } : null
-            },
             commentCount: 0,
             likeCount: 0,
             dislikeCount: 0,

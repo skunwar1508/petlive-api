@@ -74,6 +74,7 @@ let langauge = {
         accessdenied: "Access denied.",
         categorynotfound: "Category not found.",
         deleted: "Deleted successfully.",
+        postSuccess : "Post created successfully.",
     },
 };
 
