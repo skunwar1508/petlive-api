@@ -103,13 +103,14 @@ async function likePost(req, res) {
         let userType = req.doc.role; // Assuming req.doc contains the user role
         userType = userType == 'Admin' ? 'Admin' : userType;
         if (post.likes.some(like => like.userId.toString() === userId && like.userType === userType)) {
-            return apiResponses.errorMessage(res, 400, CMS.Lang_Messages("en", "alreadyLiked"));
+            post.likes = post.likes.filter(like => !(like.userId.toString() === userId && like.userType === userType));
+        } else {
+            post.likes.push({ userId, userType });
         }
         // Remove dislike if it exists
-        post.dislikes = post.dislikes.filter(dislike => !(dislike.userId.toString() === userId && dislike.userType === userType));
+        // post.dislikes = post.dislikes.filter(dislike => !(dislike.userId.toString() === userId && dislike.userType === userType));
         // Add like
 
-        post.likes.push({ userId, userType });
         await post.save();
 
         return apiResponses.successResponse(res, CMS.Lang_Messages("en", "likeSuccess"), post);
