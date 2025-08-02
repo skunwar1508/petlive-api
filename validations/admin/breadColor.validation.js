@@ -44,8 +44,8 @@ const updateStatusSchema = Joi.object({
 
 const paginateSchema = Joi.object({
     page: Joi.number().integer().min(1).optional(),
-    perPage: Joi.number().integer().min(1).optional()
-});
+    perPage: Joi.number().integer().min(1).optional(),
+    searchString: Joi.string().allow('', null)});
 
 // Middleware
 const validateJoi = (schema, source = 'body') => async (req, res, next) => {
