@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const chatRoomSchema = new mongoose.Schema({
     patientId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'pet', // ✅ use 'pet' as the referenced model
+        ref: 'patient', // ✅ use 'patient' as the referenced model
         required: true,
     },
     doctorId: {

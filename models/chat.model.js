@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const messageSchema = new mongoose.Schema({
     patientId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Pet', // ✅ changed to 'Pet'
+        ref: 'patient', // ✅ changed to 'patient'
         required: true,
     },
     doctorId: {

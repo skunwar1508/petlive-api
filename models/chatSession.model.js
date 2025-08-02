@@ -5,7 +5,7 @@ const chatSessionSchema = new mongoose.Schema({
     serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true },
     doctorIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' }],
     doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' },
-    patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pet' },
+    patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'patient' },
     requestedAt: { type: Date, default: Date.now },
     startedAt: { type: Date },
     endedAt: { type: Date },

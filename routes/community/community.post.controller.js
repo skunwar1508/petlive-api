@@ -245,7 +245,7 @@ async function paginatePosts(req, res) {
                 { $match: { authorRole: 'patient' } },
                 {
                     $lookup: {
-                    from: 'pets',
+                    from: 'patients',
                     localField: 'author',
                     foreignField: '_id',
                     as: 'authorDetails'
