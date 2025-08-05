@@ -15,7 +15,7 @@ const login = async (req, res) => {
             return apiResponse.validationErrorWithData(res, "Email and password are required");
         }
 
-        let doctor = await doctorModel.findOne({ email: requestData.email.toLowerCase(), isProfileCompleted: true, isDeleted: false });
+        let doctor = await doctorModel.findOne({ email: requestData.email.toLowerCase(), isDeleted: false });
         if (!doctor) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         }
