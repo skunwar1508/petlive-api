@@ -7,6 +7,7 @@ const ChatSession = require("./models/chatSession.model");
 const Pet = require("./models/patient.model");
 const Doctor = require('./models/doctor.model');
 const Service = require('./models/service.model');
+const { Mongoose } = require("mongoose");
 
 const timers = new Map();
 
@@ -62,8 +63,9 @@ module.exports = function (io) {
             }
 
             // Find doctors who provide this service (limit 10 random)
+            // approveProfile isActive
             const doctors = await Doctor.aggregate([
-                { $match: { services: serviceId } },
+                { $match: { services: Mongoose.Types.ObjectId(serviceId), approveProfile: "Approved", isActive: true } },
                 { $sample: { size: 10 } }
             ]);
             if (!doctors.length) {
