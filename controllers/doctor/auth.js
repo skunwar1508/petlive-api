@@ -19,9 +19,9 @@ const login = async (req, res) => {
         if (!doctor) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         }
-        if (doctor.approveProfile === "Rejected") {
-            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profileRejected"));
-        }
+        // if (doctor.approveProfile === "Rejected") {
+        //     return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profileRejected"));
+        // }
         if (doctor.approveProfile === "Pending") {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profilePending"));
         }
@@ -61,7 +61,7 @@ const verifySignUpOTP = async (req, res) => {
             if (otp[0].otp === requestData.otp) {
                 let doctor = await doctorModel.findOne({ email: requestData.email.toLowerCase(), isDeleted: false, approveProfile: { $ne: "Rejected" } }).select("-password");
                 if (doctor.isProfileCompleted === true) return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistemail"));
-
+                
                 console.log(doctor)
                 let payLoad = {
                     id: doctor._id,
