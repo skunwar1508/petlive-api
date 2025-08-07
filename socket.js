@@ -84,26 +84,54 @@ module.exports = function (io) {
             }
 
             // Save chat request with status pending, and list of doctorIds
-            let chatRequest = await ChatSession.create({
+            // Upsert: If a pending chat session exists for this patient and service, update doctorIds; else create new
+            let chatRequest = await ChatSession.findOneAndUpdate(
+                {
+                    serviceId,
+                    patientId: socket.doc.id,
+                    status: "pending"
+                },
+                {
+                    $set: {
+                        serviceId,
+                        patientId: socket.doc.id,
+                        status: "pending",
+                        requestedAt: new Date(),
+                        servicePrice
+                    },
+                    $addToSet: { doctorIds: { $each: doctors.map(d => d._id) } }
+                },
+                { new: true, upsert: true }
+            );
+            const previousSession = await ChatSession.findOne({
                 serviceId,
-                doctorIds: doctors.map(d => d._id),
                 patientId: socket.doc.id,
-                status: "pending",
-                requestedAt: new Date(),
-                servicePrice
+                status: "pending"
             });
-            console.log("Chat request created:", chatRequest);
 
+            // Notify all eligible doctors
+            // Notify previous eligible doctors if session existed
+            if (previousSession && previousSession.doctorIds && previousSession.doctorIds.length) {
+                for (const docId of previousSession.doctorIds) {
+                    io.emit(`chatRequestClosed:${docId}`, chatRequest);
+                }
+            }
+            // socket.emit("chatRequestSent", { doctorIds: doctors.map(d => d._id), chatRequestId: chatRequest._id, servicePrice });
+            chatRequest = await ChatSession.findById(chatRequest._id)
+                .populate('doctorIds', 'name profileImage')
+                .populate('serviceId', 'name price')
+                .populate({
+                    path: 'patientId',
+                    select: 'name ownerImage',
+                    populate: {
+                        path: 'ownerImage',
+                        select: '_id path',
+                        options: { limit: 1 }
+                    }
+                });
             // Notify all 10 doctors of chat request
             for (const doc of doctors) {
-                io.emit(`chatRequest:${doc._id}`, {
-                    patientId: socket.doc.id,
-                    patientSocketId: socket.id,
-                    doctorId: doc._id,
-                    chatRequestId: chatRequest._id,
-                    serviceId,
-                    servicePrice
-                });
+                io.emit(`chatRequest:${doc._id}`, chatRequest);
             }
 
             socket.emit("chatRequestSent", { doctorIds: doctors.map(d => d._id), chatRequestId: chatRequest._id, servicePrice });
@@ -172,7 +200,6 @@ module.exports = function (io) {
 
             // Notify patient with doctor info and chatRoomId
             const doctorInfo = await Doctor.findById(socket.doc.id).select("-password").populate("profileImage");
-            console.log(`chatAccepted:${chatRequest.patientId}`);
             io.emit(`chatAccepted:${chatRequest.patientId}`, {
                 chatRoomId: chatRoom._id,
                 doctorId: socket.doc.id,
@@ -186,6 +213,8 @@ module.exports = function (io) {
             for (const docId of chatRequest.doctorIds) {
                 if (docId.toString() !== socket.doc.id.toString()) {
                     io.emit(`chatRequestClosed:${docId}`, { chatRequestId });
+                }else {
+                    io.emit(`chatRequestAccepted:${docId}`, { chatRequestId, chatRoomId: chatRoom._id });
                 }
             }
         });
@@ -250,17 +279,16 @@ module.exports = function (io) {
             if (!user) return socket.emit("chatError", "Authorization Failed");
 
             socket.join(user.room);
-            console.log(`${socket.doc.id} joined chat ${user.room}`);
 
             io.to(user.id).emit("recentMessages", { data: chatRoom, messages: "successfully joined" });
         }); 
 
         // When chat ends, update session with total minutes and amount
-        socket.on("leaveChat", async () => {
+        socket.on("leaveChat", async ({chatRoomId}) => {
             const user = getCurrentUser(socket.id);
             if (!user) return;
 
-            const chatRoom = await ChatRoom.findById(user.room);
+            const chatRoom = await ChatRoom.findById(chatRoomId);
             if (!chatRoom) return;
 
             // Find the chat session for this room
@@ -304,7 +332,7 @@ module.exports = function (io) {
         });
 
         // Only allow chat messages if chat is not ended
-        socket.on("chatMessage", async ({ message, chatRequestId }) => {
+        socket.on("chatMessage", async ({ message }) => {
             const user = getCurrentUser(socket.id);
             if (!user) return socket.emit("chatError", "Authorization Failed");
 
@@ -334,7 +362,6 @@ module.exports = function (io) {
             chatRoom.lastMessage = message;
             chatRoom.lastMessageAt = new Date();
             await chatRoom.save();
-
             io.to(user.room).emit("message", newMessage);
         });
 

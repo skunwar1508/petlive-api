@@ -7,6 +7,7 @@ const {
     getAllMessages,
     chatroomPagin,
     isBookingOpen,
+    chatroomById,
     getAllChatSessions
 } = require('../../controllers/socket/socket.controller.js'); // Adjust path as needed
 
@@ -15,6 +16,8 @@ router.get('/messages/:id', verifyJWT, getAllMessages);
 
 // Chatroom pagination
 router.post('/chatroom/pagination', verifyJWT, chatroomPagin);
+// Get chatroom by _id
+router.get('/chatroom/:id', verifyJWT, chatroomById);
 
 // Check if booking (chatroom) is open
 router.get('/chatroom/isBookingOpen/:serviceId', verifyJWT, isBookingOpen);

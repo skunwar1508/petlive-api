@@ -23,7 +23,7 @@ const getAllMessages = async (req, res) => {
         }
 
         const messages = await ChatMessage.find(filter)
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: 1 })
             .populate({
                 path: 'doctorId',
                 select: 'name profileImage'
@@ -229,11 +229,34 @@ async function isBookingOpen(req, res) {
     }
 }
 
+const chatroomById = async (req, res) => {
+    try {
+        const chatRoomId = req.params.id;
+        if (!chatRoomId) {
+            return apiResponse.errorMessage(res, 400, "Chatroom ID is required");
+        }
+
+        const chatRoom = await Chatroom.findById(chatRoomId)
+            .populate('serviceId', 'name')
+            .populate('doctorId', 'name profileImage')
+            .populate('patientId', 'name ownerName color age');
+
+        if (!chatRoom) {
+            return apiResponse.errorMessage(res, 400, "Chatroom not found");
+        }
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), chatRoom);
+    } catch (error) {
+        console.error("Error fetching chatroom by ID:", error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
 const getAllChatSessions = async (req, res) => {
     try {
         const doctorId = req.doc.id;
 
-        let chatSessions = await ChatSessions.find({ doctorId: doctorId, status: 'pending' })
+        let chatSessions = await ChatSessions.find({ doctorIds: { $in: [doctorId] }, status: 'pending' })
             .populate('doctorId', 'name profileImage')
             .populate('serviceId', 'name price')
             .populate({
@@ -267,5 +290,6 @@ module.exports = {
     getAllMessages,
     chatroomPagin,
     isBookingOpen,
-    getAllChatSessions
+    getAllChatSessions,
+    chatroomById
 };
