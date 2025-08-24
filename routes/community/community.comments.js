@@ -5,6 +5,7 @@ const escape = require("../../common-modules/escape.js");
 const apiResponses = require("../../utils/apiResponse.js");
 const communityComments = require("../../models/community.comments.js");
 const communityPost = require("../../models/community_post.model.js");
+const { log } = require("handlebars");
 
 
 
@@ -37,9 +38,18 @@ async function addCommunityComment(req, res) {
         // ---- saving......
         const savedComment = await newComment.save();
   
-        const populatedComment = await savedComment.populate([
-          { path: "senderId", populate: { path: "profileImage" } },
-        ])
+        let populateOptions = [];
+        if (req.doc.role === "doctor") {
+          populateOptions = [{ path: "senderId", populate: { path: "profileImage" } }];
+        } else if (req.doc.role === "patient") {
+            populateOptions = [{ path: "senderId", populate: { path: "ownerImage" } }];
+        }
+        let populatedComment = await communityComments.populate(savedComment, populateOptions);
+
+        // If patient, pick only the first ownerImage
+        if (req.doc.role === "patient" && populatedComment.senderId && Array.isArray(populatedComment.senderId.ownerImage)) {
+          populatedComment.senderId.ownerImage = populatedComment.senderId.ownerImage[0] || null;
+        }
   
         // ---- if data saved successfully
         if(populatedComment){
