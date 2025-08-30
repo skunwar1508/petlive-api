@@ -45,6 +45,11 @@ async function addCommunityComment(req, res) {
     } else if (req.doc.role === "patient") {
       populateOptions = [{ path: "senderId", populate: { path: "ownerImage" } }];
     }
+
+    // Remove ownerImage key if present
+    if (req.doc.role === "patient" && newComment.senderId && newComment.senderId.ownerImage) {
+      delete newComment.senderId.ownerImage;
+    }
     let populatedComment = await communityComments.populate(savedComment, populateOptions);
 
     // If patient, pick only the first ownerImage
