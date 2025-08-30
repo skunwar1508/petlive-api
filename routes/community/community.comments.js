@@ -43,22 +43,13 @@ async function addCommunityComment(req, res) {
     if (req.doc.role === "doctor") {
       populateOptions = [{ path: "senderId", populate: { path: "profileImage" } }];
     } else if (req.doc.role === "patient") {
-      populateOptions = [{ path: "senderId", populate: { path: "ownerImage" } }];
+      populateOptions = [{ path: "senderId" }];
     }
-
-    // // Remove ownerImage key if present
-    // if (req.doc.role === "patient" && newComment.senderId && newComment.senderId.ownerImage) {
-    //   delete newComment.senderId.ownerImage;
-    // }
     let populatedComment = await communityComments.populate(savedComment, populateOptions);
-
-    // If patient, pick only the first ownerImage
-    if (req.doc.role === "patient" && populatedComment.senderId && Array.isArray(populatedComment.senderId.ownerImage)) {
-      // populatedComment.senderId.ownerImage = populatedComment.senderId.ownerImage[0] || null;
-      delete newComment.senderId.ownerImage;
+    if (populatedComment && populatedComment.senderId && populatedComment.senderId.ownerImage !== undefined) {
+      delete populatedComment.senderId.ownerImage;
     }
 
-    // ---- if data saved successfully
     if (populatedComment) {
       return apiResponses.successResponse(res, `Comment ${CMS.Lang_Messages("en", "addSuc")}`, populatedComment);
     }
@@ -148,120 +139,120 @@ async function getAllCommentsByPostId(req, res) {
       { $sort: { createdAt: -1 } },
       // Lookup sender (doctor or patient)
       {
-      $lookup: {
-        from: "doctors",
-        localField: "senderId",
-        foreignField: "_id",
-        as: "doctorSender"
-      }
-      },
-      {
-      $lookup: {
-        from: "patients",
-        localField: "senderId",
-        foreignField: "_id",
-        as: "patientSender"
-      }
-      },
-      {
-      $lookup: {
-        from: "images",
-        localField: "doctorSender.profileImage",
-        foreignField: "_id",
-        as: "doctorSenderProfileImage"
-      }
-      },
-      {
-      $lookup: {
-        from: "images",
-        localField: "patientSender.ownerImage",
-        foreignField: "_id",
-        as: "patientSenderOwnerImage"
-      }
-      },
-      {
-      $addFields: {
-        senderId: {
-        $cond: [
-          { $eq: ["$senderRole", "doctor"] },
-          {
-          $mergeObjects: [
-            { $arrayElemAt: ["$doctorSender", 0] },
-            { profileImage: { $arrayElemAt: ["$doctorSenderProfileImage", 0] } }
-          ]
-          },
-          {
-          $mergeObjects: [
-            { $arrayElemAt: ["$patientSender", 0] },
-            { ownerImage: { $arrayElemAt: ["$patientSenderOwnerImage", 0] } }
-          ]
-          }
-        ]
+        $lookup: {
+          from: "doctors",
+          localField: "senderId",
+          foreignField: "_id",
+          as: "doctorSender"
         }
-      }
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "senderId",
+          foreignField: "_id",
+          as: "patientSender"
+        }
+      },
+      {
+        $lookup: {
+          from: "images",
+          localField: "doctorSender.profileImage",
+          foreignField: "_id",
+          as: "doctorSenderProfileImage"
+        }
+      },
+      {
+        $lookup: {
+          from: "images",
+          localField: "patientSender.ownerImage",
+          foreignField: "_id",
+          as: "patientSenderOwnerImage"
+        }
+      },
+      {
+        $addFields: {
+          senderId: {
+            $cond: [
+              { $eq: ["$senderRole", "doctor"] },
+              {
+                $mergeObjects: [
+                  { $arrayElemAt: ["$doctorSender", 0] },
+                  { profileImage: { $arrayElemAt: ["$doctorSenderProfileImage", 0] } }
+                ]
+              },
+              {
+                $mergeObjects: [
+                  { $arrayElemAt: ["$patientSender", 0] },
+                  { ownerImage: { $arrayElemAt: ["$patientSenderOwnerImage", 0] } }
+                ]
+              }
+            ]
+          }
+        }
       },
       { $project: { doctorSender: 0, patientSender: 0, doctorSenderProfileImage: 0, patientSenderOwnerImage: 0 } },
       // Replies population
       {
-      $lookup: {
-        from: "doctors",
-        localField: "replies.doctorId",
-        foreignField: "_id",
-        as: "doctorReplies"
-      }
+        $lookup: {
+          from: "doctors",
+          localField: "replies.doctorId",
+          foreignField: "_id",
+          as: "doctorReplies"
+        }
       },
       {
-      $lookup: {
-        from: "patients",
-        localField: "replies.patientId",
-        foreignField: "_id",
-        as: "patientReplies"
-      }
+        $lookup: {
+          from: "patients",
+          localField: "replies.patientId",
+          foreignField: "_id",
+          as: "patientReplies"
+        }
       },
       {
-      $lookup: {
-        from: "images",
-        localField: "doctorReplies.profileImage",
-        foreignField: "_id",
-        as: "doctorRepliesProfileImages"
-      }
+        $lookup: {
+          from: "images",
+          localField: "doctorReplies.profileImage",
+          foreignField: "_id",
+          as: "doctorRepliesProfileImages"
+        }
       },
       {
-      $lookup: {
-        from: "images",
-        localField: "patientReplies.ownerImage",
-        foreignField: "_id",
-        as: "patientRepliesOwnerImages"
-      }
+        $lookup: {
+          from: "images",
+          localField: "patientReplies.ownerImage",
+          foreignField: "_id",
+          as: "patientRepliesOwnerImages"
+        }
       }
     ]);
 
     // Attach populated doctor/patient to each reply and clean up
     comments = comments.map(comment => {
       if (Array.isArray(comment.replies) && comment.replies.length) {
-      comment.replies = comment.replies.map(reply => {
-        if (reply.role === "doctor" && reply.doctorId) {
-        let doc = comment.doctorReplies.find(d => d._id.toString() === reply.doctorId?.toString()) || null;
-        if (doc) {
-          let img = comment.doctorRepliesProfileImages.find(img => img._id.toString() === (doc.profileImage?.toString())) || null;
-          doc.profileImage = img;
-        }
-        reply.doctorId = doc;
-        }
-        if (reply.role === "patient" && reply.patientId) {
-        let pat = comment.patientReplies.find(p => p._id.toString() === reply.patientId?.toString()) || null;
-        if (pat) {
-          let img = comment.patientRepliesOwnerImages.find(img => img._id.toString() === (pat.ownerImage?.toString())) || null;
-          pat.ownerImage = img;
-        }
-        reply.patientId = pat;
-        }
-        return reply;
-      }).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        comment.replies = comment.replies.map(reply => {
+          if (reply.role === "doctor" && reply.doctorId) {
+            let doc = comment.doctorReplies.find(d => d._id.toString() === reply.doctorId?.toString()) || null;
+            if (doc) {
+              let img = comment.doctorRepliesProfileImages.find(img => img._id.toString() === (doc.profileImage?.toString())) || null;
+              doc.profileImage = img;
+            }
+            reply.doctorId = doc;
+          }
+          if (reply.role === "patient" && reply.patientId) {
+            let pat = comment.patientReplies.find(p => p._id.toString() === reply.patientId?.toString()) || null;
+            if (pat) {
+              let img = comment.patientRepliesOwnerImages.find(img => img._id.toString() === (pat.ownerImage?.toString())) || null;
+              pat.ownerImage = img;
+            }
+            reply.patientId = pat;
+          }
+          return reply;
+        }).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       }
       // For patient, pick only the first ownerImage
       if (comment.senderRole === "patient" && comment.senderId && Array.isArray(comment.senderId.ownerImage)) {
-      comment.senderId.ownerImage = comment.senderId.ownerImage[0] || null;
+        comment.senderId.ownerImage = comment.senderId.ownerImage[0] || null;
       }
       delete comment.doctorReplies;
       delete comment.patientReplies;
