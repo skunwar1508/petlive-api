@@ -42,8 +42,6 @@ async function addCommunityComment(req, res) {
     let populateOptions = [];
     if (req.doc.role === "doctor") {
       populateOptions = [{ path: "senderId", populate: { path: "profileImage" } }];
-    } else if (req.doc.role === "patient") {
-      populateOptions = [{ path: "senderId", populate: { path: "ownerImage" } }];
     }
 
     // Remove ownerImage key if present
@@ -53,9 +51,9 @@ async function addCommunityComment(req, res) {
     let populatedComment = await communityComments.populate(savedComment, populateOptions);
 
     // If patient, pick only the first ownerImage
-    if (req.doc.role === "patient" && populatedComment.senderId && Array.isArray(populatedComment.senderId.ownerImage)) {
-      populatedComment.senderId.ownerImage = populatedComment.senderId.ownerImage[0] || null;
-    }
+    // if (req.doc.role === "patient" && populatedComment.senderId && Array.isArray(populatedComment.senderId.ownerImage)) {
+    //   populatedComment.senderId.ownerImage = populatedComment.senderId.ownerImage[0] || null;
+    // }
 
     // ---- if data saved successfully
     if (populatedComment) {
