@@ -663,7 +663,7 @@ const verifyForgotPasswordOTP = async (req, res) => {
         if (otpRecord.length === 0) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
         }
-        if (otpRecord[0].otp !== otp) {
+        if (Number(otpRecord[0].otp) !== Number(otp)) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
         }
         const doctor = await doctorModel.findOne({ email: email.toLowerCase(), isDeleted: false });
