@@ -137,10 +137,25 @@ const getById = async (req, res) => {
     }
 };
 
+const getTopFeatured = async (req, res) => {
+    try {
+        const con = { isDeleted: false, isFeatured: true, isActive: true, status: "published" };
+        const blogs = await blogModel.find(con)
+            .sort({ createdAt: -1 })
+            .limit(4)
+            .populate(['coverImage', 'author']);
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), blogs);
+    } catch (err) {
+        console.log(err);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
 
 module.exports = {
     paginate,
     create,
     update,
     getById,
+    getTopFeatured
 };
