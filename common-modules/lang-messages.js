@@ -86,6 +86,9 @@ let langauge = {
         viewSuccess: "Post view registered successfully.",
         deleteSuccess: "Post deleted successfully.",
         notAuthorized: "User not authorized to perform action.",
+        created: "Created successfully.",
+        updated: "Updated successfully.",
+        blogNotFound: "Blog not found.",
     },
 };
 

@@ -65,6 +65,95 @@ const signup = async (req, res) => {
         return apiResponse.somethingWentWrongMsg(res);
     }
 };
+const signupWeb = async (req, res) => {
+    try {
+        const { name, phone, email } = req.body;
+
+        // Validate input
+        if (!name || !phone || !email) {
+            return apiResponse.validationErrorWithData(res, "Name, phone, and email are required.");
+        }
+
+        // Check if user already exists
+        let existingUser = await patientModel.findOne({
+            phone: phone,
+            isDeleted: false,
+        });
+        if (existingUser) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistswithcreds"));
+        }
+        // Generate JWT token
+        const otpCode = Math.floor(1000 + Math.random() * 9000); // 4-digit OTP
+        const newOtp = new otpModel({
+            otp: otpCode,
+            phone: phone,
+            usedFor: "SIGNUP",
+        });
+
+        await newOtp.save();
+
+        // Include OTP in the response if in development mode
+        if (process.env.MODE === "development") {
+            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { otpCode: otpCode });
+        }
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), null);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+const verifySignupWebOtp = async (req, res) => {
+    try {
+        const { name, phone, email, otp } = req.body;
+
+        if (!phone || !otp) {
+            return apiResponse.validationErrorWithData(res, "Phone and OTP are required.");
+        }
+
+        // Find latest OTP for SIGNUP
+        const otpDoc = await otpModel.find({ phone, usedFor: "SIGNUP" }).sort({ createdAt: -1 }).limit(1);
+
+        if (!otpDoc.length) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
+        }
+        console.log(otpDoc[0].otp, otp);    
+
+        if (Number(otpDoc[0].otp) !== Number(otp)) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
+        }
+
+        // Create new user
+        let userData = new patientModel({
+            name,
+            phone,
+            email,
+            isAccept: true,
+            isVerified: true,
+            userType: "WEB",
+            lastStep: 1,
+        });
+
+        const user = await userData.save();
+
+        // Generate JWT token
+        let payLoad = {
+            id: user._id,
+            role: roles.patient,
+        };
+
+        let token = jwt.sign(payLoad, process.env.LOGIN_KEY, {
+            expiresIn: "24h",
+        });
+
+        user._doc.token = token;
+        await otpModel.deleteOne({ _id: otpDoc[0]._id });
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
 
 const lastStep = async (req, res) => {
     try {
@@ -248,6 +337,7 @@ const verifyOtp = async (req, res) => {
                 let userData = new patientModel({
                     phone: requestData.phone,
                     isAccept: requestData.isAccept,
+                    isVerified: true,
                     lastStep: 1,
                 });
 
@@ -625,5 +715,7 @@ module.exports = {
     profileUpdate,
     getPatientPagination,
     getPatientById,
-    updatePatientByStatus
+    updatePatientByStatus,
+    signupWeb,
+    verifySignupWebOtp
 };

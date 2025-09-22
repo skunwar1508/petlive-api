@@ -55,6 +55,39 @@ const signUpValidation = async (req, res, next) => {
     }
     next();
 };
+const signUpWebValidation = async (req, res, next) => {
+    const schema = Joi.object({
+        name: Joi.string().required(),
+        phone: Joi.string().required(),
+        email: Joi.string().email().required(),
+        otp: Joi.number().allow(null, ""),
+    });
+
+    const value = schema.validate(req.body);
+
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    next();
+};
+const verifyOtpWebValidation = async (req, res, next) => {
+    const schema = Joi.object({
+        name: Joi.string().required(),
+        phone: Joi.string().required(),
+        email: Joi.string().email().required(),
+        otp: Joi.number().required(),
+    });
+
+    const value = schema.validate(req.body);
+
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    next();
+};
+
 
 // ==========================================================
 
@@ -275,5 +308,7 @@ module.exports = {
     step7Validation,
     step8Validation,
     step9Validation,
-    fullProfileValidation
+    fullProfileValidation,
+    signUpWebValidation,
+    verifyOtpWebValidation,
 };

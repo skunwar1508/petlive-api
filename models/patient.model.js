@@ -99,6 +99,15 @@ const petSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
+    userType: {
+        type: String,
+        enum: ['APP', 'WEB'],
+        default: 'APP',
+    },
 }, {
     timestamps: true,
 });
