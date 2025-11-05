@@ -301,6 +301,42 @@ async function paginateCommunity(req, res) {
 }
 
 /**
+ * Paginate public community list with search (no auth required)
+ */
+async function paginatePublicCommunity(req, res) {
+    try {
+        const startIndex = (req.body.page - 1) * req.body.perPage;
+        const perPage = parseInt(req.body.perPage);
+        const skipCondition = {
+            skip: startIndex,
+            limit: perPage,
+            sort: { createdAt: -1 },
+        };
+
+        const con = { isDeleted: false };
+
+        if (req.body.searchString) {
+            con["$or"] = [
+                { name: { $regex: ".*" + req.body.searchString + ".*", $options: "i" } },
+                { description: { $regex: ".*" + req.body.searchString + ".*", $options: "i" } }
+            ];
+        }
+
+        const communities = await communityModel.find(con, {}, skipCondition).populate(["image", "createdById"]);
+        const totalCount = await communityModel.countDocuments(con);
+        const communitiesWithFlag = communities.map(community => {
+            let joinedMembers = community.members?.length || 0;
+            delete community._doc.members; // Remove members from response
+            return { ...community._doc, joinedMembers };
+        });
+        return apiResponses.successResWithPagination(res, CMS.Lang_Messages("en", "success"), communitiesWithFlag, totalCount);
+    } catch (error) {
+        console.error(error);
+        return apiResponses.somethingWentWrongMsg(res);
+    }
+}
+
+/**
  * Add a member to a community (provider/patient only)
  */
 async function addCommunityMember(req, res) {
@@ -417,5 +453,6 @@ module.exports = {
     getAllCommunitiesJoined,
     getAllCommunitiesSearch,
     getAllCommunitiesUnJoined,
-    uploadCommunityImage
+    uploadCommunityImage,
+    paginatePublicCommunity
 };

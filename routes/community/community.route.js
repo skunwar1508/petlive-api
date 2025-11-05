@@ -14,7 +14,8 @@ const {
     removeCommunityMember,
     getAllCommunitiesJoined,
     getAllCommunitiesSearch,
-    getAllCommunitiesUnJoined
+    getAllCommunitiesUnJoined,
+    paginatePublicCommunity
 } = require("./community.controller.js");
 
 const {
@@ -51,6 +52,7 @@ const { addFlag, paginateFlag } = require('./community.flag.js');
 
 // 🟢 COMMUNITY ROUTES
 
+router.post("/public/paginate", communityPaginationValidation, paginatePublicCommunity);
 router.post("/add", verifyJWT, addCommunityValidation, addCommunity);
 router.get("/get/:id", verifyJWT, getCommunity);
 router.get("/getall", verifyJWT, getAllCommunities);
@@ -59,7 +61,7 @@ router.get("/getall/unjoined", verifyJWT, getAllCommunitiesUnJoined);
 router.post("/getallBySearch", verifyJWT, getAllCommunitiesSearch);
 router.post("/update/:id", verifyJWT, addCommunityValidation, updateCommunity);
 // router.delete("/delete/:id", verifyJWT, deleteCommunity);
-router.post("/paginate", communityPaginationValidation, paginateCommunity);
+router.post("/paginate", verifyJWT, communityPaginationValidation, paginateCommunity);
 
 // // 🧑‍🤝‍🧑 MEMBER ROUTES
 
