@@ -46,11 +46,14 @@ async function chatroomPagin(req, res) {
             return apiResponse.errorMessage(res, 400, error.details[0].message);
         }
         const id = req.doc.id;
-        const { page = 1, perPage = 10, searchString = '' } = req.body;
+        const { page = 1, perPage = 10, searchString = '',  isClosed  } = req.body;
         const startIndex = (page - 1) * perPage;
         const searchRegex = searchString ? new RegExp(searchString, 'i') : "";
 
         let matchStage = {};
+        if (typeof isClosed === 'boolean') {
+            matchStage.isClosed = isClosed;
+        }
 
         // Role-based filtering
         if (req.doc.role === roles.patient) {
@@ -297,7 +300,8 @@ function paginateValidation(body) {
     const schema = Joi.object({
         page: Joi.number().required(),
         perPage: Joi.number().required(),
-        searchString: Joi.string().allow("", null)
+        searchString: Joi.string().allow("", null),
+        isClosed: Joi.boolean()
     });
 
     const { error } = schema.validate(body);

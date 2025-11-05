@@ -13,6 +13,8 @@ router.post('/login', patientValidation.signUpValidation, authController.login);
 router.post('/login/verify', patientValidation.verifyOtpValidation, authController.verifyLoginOtp);
 router.post('/signup', patientValidation.signUpValidation, authController.signup);
 router.post('/signup/verify', patientValidation.verifyOtpValidation,  authController.verifyOtp);
+router.post('/signup/web', patientValidation.signUpWebValidation, authController.signupWeb);
+router.post('/signup/web/verify', patientValidation.verifyOtpWebValidation,  authController.verifySignupWebOtp);
 router.post('/signup/resend', patientValidation.resendValidation, authController.resendOtp);
 router.get('/profile', verifyJWT, authController.getProfile);
 router.get('/profile/:id', verifyJWT, authController.getProfile);
@@ -30,5 +32,7 @@ router.post('/status/:id', verifyJWT, authController.updatePatientByStatus);
 
 router.use('/signup/steps', verifyJWT, signupStepRouter);
 // router.use('/', verifyJWT, signupStepRouter);
+
+
 
 module.exports = router;

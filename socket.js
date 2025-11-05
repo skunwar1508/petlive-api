@@ -61,13 +61,31 @@ module.exports = function (io) {
             if (!pet) {
                 return socket.emit("chatError", "Patient not found");
             }
+            // Ensure serviceId is a valid ObjectId
+            const serviceObjectId = mongoose.Types.ObjectId(serviceId);
+
+            // Get active doctor IDs as ObjectIds
+            const activeDoctorIds = (await ChatSession.find({
+                serviceId: serviceObjectId,
+                status: "accepted"
+            }).distinct("doctorId"))
+            // .map(id => mongoose.Types.ObjectId(id));
 
             // Find doctors who provide this service (limit 10 random)
+            console.log("Active Doctor IDs:", activeDoctorIds);
             // approveProfile isActive
             const doctors = await Doctor.aggregate([
-                { $match: { services: mongoose.Types.ObjectId(serviceId), approveProfile: "Approved", isActive: true } },
+                {
+                    $match: {
+                        services: serviceObjectId,
+                        approveProfile: "Approved",
+                        isActive: true,
+                        _id: { $nin: activeDoctorIds }
+                    }
+                },
                 { $sample: { size: 10 } }
             ]);
+            console.log("Doctors:", doctors);
             if (!doctors.length) {
                 return socket.emit("chatError", "No doctors available for this service");
             }
