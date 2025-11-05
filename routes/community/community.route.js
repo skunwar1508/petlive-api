@@ -59,7 +59,7 @@ router.get("/getall/unjoined", verifyJWT, getAllCommunitiesUnJoined);
 router.post("/getallBySearch", verifyJWT, getAllCommunitiesSearch);
 router.post("/update/:id", verifyJWT, addCommunityValidation, updateCommunity);
 // router.delete("/delete/:id", verifyJWT, deleteCommunity);
-router.post("/paginate", verifyJWT, communityPaginationValidation, paginateCommunity);
+router.post("/paginate", communityPaginationValidation, paginateCommunity);
 
 // // 🧑‍🤝‍🧑 MEMBER ROUTES
 
