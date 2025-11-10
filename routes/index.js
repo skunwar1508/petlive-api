@@ -5,6 +5,8 @@ const doctorRouter = require('./doctor/doctor.index.js');
 const patientRouter = require('./patient/patient.index.js');
 
 const router = express.Router();
+// blog 
+router.use('/blog', require('../routes/blogs/blog.index.js'));
 
 router.use('/admin', adminRouter);
 router.use('/doctor', doctorRouter);
@@ -17,7 +19,5 @@ router.use("/breadColor", require("./breadColor/breadColor.index.js"));
 router.use("/services", require("./services/services.routes.js"));
 router.use("/community", require("../routes/community/community.route.js"));
 router.use("/request", require("../routes/socket/socket.routes.js"));
-// blog 
-router.use('/blog', require('../routes/blogs/blog.index.js'));
 
 module.exports = router;

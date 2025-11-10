@@ -9,7 +9,7 @@ const { default: mongoose, sanitizeFilter } = require("mongoose");
 
 const paginate = async (req, res) => {
     try {
-        const { page = 1, perPage = 10, searchString = "" } = req.body;
+        const { page = 1, perPage = 10, searchString = "", createdAt = -1 } = req.body;
         const skip = (page - 1) * perPage;
 
         const con = { isDeleted: false }; // Add any filtering conditions if needed
@@ -22,7 +22,7 @@ const paginate = async (req, res) => {
         }
 
         const [blogs, total] = await Promise.all([
-            blogModel.find(con).skip(skip).limit(perPage).sort({ createdAt: -1 }).populate('coverImage'),
+            blogModel.find(con).skip(skip).limit(perPage).sort({ createdAt: createdAt }).populate('coverImage'),
             blogModel.countDocuments(con)
         ]);
 

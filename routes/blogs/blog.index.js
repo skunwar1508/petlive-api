@@ -3,11 +3,11 @@ const { paginate, create, update, getById, getTopFeatured } = require('../../con
 const verifyJWT = require('../../utils/jwt');
 const router = express.Router();
 
-router.post('/paginate', verifyJWT, paginate);
-router.post('/create', verifyJWT, create);
-router.post('/update/:id', verifyJWT, update);
+router.post('/paginate', paginate);
 router.get('/top-featured', getTopFeatured);
 router.get('/get/:id', getById);
+router.post('/create', verifyJWT, create);
+router.post('/update/:id', verifyJWT, update);
 
 
 
