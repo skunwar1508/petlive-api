@@ -231,7 +231,7 @@ async function isBookingOpen(req, res) {
             return apiResponse.errorMessage(res, 400, "patientId and serviceId are required");
         }
 
-        const chatRoom = await Chatroom.findOne({
+        const chatRoom = await Chatroom.find({
             patientId,
             serviceId,
             isClosed: false
