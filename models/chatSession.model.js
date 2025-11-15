@@ -7,6 +7,8 @@ const chatSessionSchema = new mongoose.Schema({
     doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'doctor' },
     patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'patient' },
     requestedAt: { type: Date, default: Date.now },
+    acceptedAt: { type: Date, default: Date.now },
+    completedAt: { type: Date, default: Date.now },
     startedAt: { type: Date },
     endedAt: { type: Date },
     servicePrice : { type: Number, required: true, default: 0 },

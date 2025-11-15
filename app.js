@@ -11,6 +11,7 @@ const bcrypt = require("bcryptjs");
 const apiResponse = require("./utils/apiResponse.js");
 
 const fs = require("fs");
+const { start } = require("./utils/cronJob.js");
 if (!fs.existsSync(path.join(__dirname, "/uploads"))) {
     fs.mkdirSync(path.join(__dirname, "/uploads"))
 }
@@ -28,6 +29,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
 const io = require("socket.io")(server);
 require("./socket.js")(io);
+start({ intervalMinutes: 60, thresholdHours: 12 });
 
 // extra middle-wares
 app.use(express.json({ limit: "50mb" }));
