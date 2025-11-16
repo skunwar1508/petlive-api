@@ -53,7 +53,7 @@ async function getCommunity(req, res) {
     try {
         const communityData = await communityModel.findOne({ _id: req.params.id, isDeleted: false }).populate(["image", "createdById"]);
 
-        if (communityData) {
+        if (communityData && req.doc.id) {
             const isMember = communityData.members.some(
                 member => member.providerId?.toString() === req.doc.id || member.patientId?.toString() === req.doc.id
             );
