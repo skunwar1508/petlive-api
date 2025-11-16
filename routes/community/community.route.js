@@ -52,9 +52,10 @@ const { addFlag, paginateFlag } = require('./community.flag.js');
 
 // 🟢 COMMUNITY ROUTES
 
+router.get("/public/get/:id", getCommunity);
 router.post("/public/paginate", communityPaginationValidation, paginatePublicCommunity);
-router.get("/get/:id", getCommunity);
 router.post("/add", verifyJWT, addCommunityValidation, addCommunity);
+router.get("/get/:id", verifyJWT, getCommunity);
 router.get("/getall", verifyJWT, getAllCommunities);
 router.get("/getall/joined", verifyJWT, getAllCommunitiesJoined);
 router.get("/getall/unjoined", verifyJWT, getAllCommunitiesUnJoined);

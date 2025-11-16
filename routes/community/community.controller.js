@@ -273,6 +273,8 @@ async function paginateCommunity(req, res) {
         }
         if (role === roles.patient && req.body.type === "my") {
             con["members.patientId"] = req.doc.id;
+        }else{
+            con["members.patientId"] = { $ne: req.doc.id };
         }
 
         console.log(role, roles.doctor, req.body.type, "my");
@@ -314,6 +316,7 @@ async function paginatePublicCommunity(req, res) {
         };
 
         const con = { isDeleted: false };
+        console.log("request", req?.doc);
 
         if (req.body.searchString) {
             con["$or"] = [
