@@ -9,6 +9,8 @@ router.get('/get/:id', getById);
 router.post('/create', verifyJWT, create);
 router.post('/update/:id', verifyJWT, update);
 
+router.use('/category', require('./blog.category.js'));
+
 
 
 module.exports = router;

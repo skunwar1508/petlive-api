@@ -13,7 +13,7 @@ const paginate = async (req, res) => {
         const skip = (page - 1) * perPage;
 
         const con = { isDeleted: false }; // Add any filtering conditions if needed
-        if (!req.doc || req.doc.role !== roles.admin) { 
+        if (!req.doc || req.doc.role !== roles.admin) {
             con.status = "published"; // Example condition for non-admin users
             con.isActive = true;
         }
@@ -41,7 +41,13 @@ const create = async (req, res) => {
             coverImage: Joi.string().optional().allow(null, ''),
             published: Joi.boolean(),
             isActive: Joi.boolean(),
+            categoryId: Joi.string().required(),
             isFeatured: Joi.boolean(),
+            meta: Joi.object({
+                title: Joi.string().optional().allow(null, '').default(''),
+                description: Joi.string().optional().allow(null, '').default(''),
+                keywords: Joi.string().optional().allow(null, '').default(''),
+            }).optional()
         });
 
         const { error, value } = schema.validate(req.body);
@@ -85,7 +91,13 @@ const update = async (req, res) => {
             coverImage: Joi.string().optional().allow(null, ''),
             published: Joi.boolean().optional(),
             isActive: Joi.boolean().optional(),
+            categoryId: Joi.string().required(),
             isFeatured: Joi.boolean().optional(),
+            meta: Joi.object({
+                title: Joi.string().optional().allow(null, '').default(''),
+                description: Joi.string().optional().allow(null, '').default(''),
+                keywords: Joi.string().optional().allow(null, '').default(''),
+            }).optional()
         });
 
         const { error, value } = schema.validate(req.body);

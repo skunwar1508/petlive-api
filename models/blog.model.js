@@ -13,6 +13,11 @@ const blogSchema = new mongoose.Schema(
             unique: true,
             trim: true,
         },
+        categoryId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'BlogCategory',
+            required: true,
+        },
         content: {
             type: String,
             required: true,
@@ -49,6 +54,11 @@ const blogSchema = new mongoose.Schema(
         coverImage: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Image',
+        },
+        meta: {
+            title: { type: String, default: '' },
+            description: { type: String, default: '' },
+            keywords: { type: String, default: '' },
         },
     },
     {
