@@ -6,11 +6,11 @@ const roles = require('../../utils/roles');
 const inquiryController = {
     async create(req, res) {
         try {
-            const { name, email, subject, message, phone, preferredContactMethod } = req.body;
-            if (!name || !email || !message) {
-                return apiResponse.errorMessage(res, 400, "Name, email, and message are required.");
+            const { name, email, subject, issue, phone, preferredContactMethod } = req.body;
+            if (!name || !email || !issue) {
+                return apiResponse.errorMessage(res, 400, "Name, email, and issue are required.");
             }
-            const newInquiry = new Inquiry({ name, email, subject, message, phone, preferredContactMethod });
+            const newInquiry = new Inquiry({ name, email, subject, issue, phone, preferredContactMethod });
             const savedInquiry = await newInquiry.save();
             return apiResponse.successResponse(res, "Inquiry submitted", savedInquiry);
         } catch (err) {
