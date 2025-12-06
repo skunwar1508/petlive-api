@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const contactUsSchema = new mongoose.Schema({
-    type: { type: String },
+    petType: { type: String },
     name: { type: String, },
     email: { type: String },
     phone: { type: String },
