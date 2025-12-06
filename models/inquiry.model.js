@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const contactUsSchema = new mongoose.Schema({
     type: { type: String },
-    petName: { type: String, },
+    name: { type: String, },
     email: { type: String },
     phone: { type: String },
     preferredContactMethod: { type: String },
