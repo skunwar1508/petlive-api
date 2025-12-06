@@ -6,11 +6,11 @@ const roles = require('../../utils/roles');
 const contactUsController = {
     async create(req, res) {
         try {
-            const { name, email, subject, message } = req.body;
+            const { name, email, phone, subject, message } = req.body;
             if (!name || !email || !message) {
                 return apiResponse.errorMessage(res, 400, "Name, email, and message are required.");
             }
-            const newContact = new ContactUs({ name, email, subject, message });
+            const newContact = new ContactUs({ name, email, phone, subject, message });
             const savedContact = await newContact.save();
             return apiResponse.successResponse(res, "Contact message submitted", savedContact);
         } catch (err) {
