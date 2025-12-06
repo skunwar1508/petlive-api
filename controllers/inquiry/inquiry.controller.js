@@ -61,6 +61,7 @@ const inquiryController = {
                 const regex = new RegExp(searchString, 'i');
                 query = {
                     $or: [
+                        { petType: regex },
                         { name: regex },
                         { email: regex },
                         { phone: regex },
