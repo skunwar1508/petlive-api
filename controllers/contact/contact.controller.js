@@ -53,10 +53,24 @@ const contactUsController = {
             const page = parseInt(req.body.page, 10) || 1;
             const perPage = parseInt(req.body.perPage, 10) || 10;
             const skip = (page - 1) * perPage;
+            const searchString = req.body.searchString || '';
+
+            // Build search query if searchString is provided
+            let query = {};
+            if (searchString) {
+                const regex = new RegExp(searchString, 'i');
+                query = {
+                    $or: [
+                        { name: regex },
+                        { email: regex },
+                        { phone: regex },
+                    ]
+                };
+            }
 
             const [contacts, total] = await Promise.all([
-                ContactUs.find().sort({ createdAt: -1 }).skip(skip).limit(perPage),
-                ContactUs.countDocuments()
+                ContactUs.find(query).sort({ createdAt: -1 }).skip(skip).limit(perPage),
+                ContactUs.countDocuments(query)
             ]);
 
             return apiResponse.successResponse(res, "Contact messages fetched", {
