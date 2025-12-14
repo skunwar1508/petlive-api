@@ -148,6 +148,29 @@ const getById = async (req, res) => {
         return apiResponse.somethingWentWrongMsg(res);
     }
 };
+const getBySlug = async (req, res) => {
+    try {
+        const { slug } = req.params;
+        if (!slug || typeof slug !== "string") {
+            return apiResponse.validationErrorWithData(res, "Invalid blog slug");
+        }
+        const con = { slug: slug, isDeleted: false };
+        if (!req.doc || req.doc.role !== roles.admin) {
+            con.status = "published";
+            con.isActive = true;
+        }
+
+        const blog = await blogModel.findOne(con).populate(['coverImage', 'categoryId']);
+        if (!blog) {
+            return apiResponse.notFoundResponse(res, "Blog not found");
+        }
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), blog);
+    } catch (err) {
+        console.log(err);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
 
 const getTopFeatured = async (req, res) => {
     try {
@@ -169,5 +192,6 @@ module.exports = {
     create,
     update,
     getById,
-    getTopFeatured
+    getTopFeatured,
+    getBySlug
 };
