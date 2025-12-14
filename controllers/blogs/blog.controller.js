@@ -22,7 +22,7 @@ const paginate = async (req, res) => {
         }
 
         const [blogs, total] = await Promise.all([
-            blogModel.find(con).skip(skip).limit(perPage).sort({ createdAt: createdAt }).populate('coverImage'),
+            blogModel.find(con).skip(skip).limit(perPage).sort({ createdAt: createdAt }).populate(['coverImage','categoryId']),
             blogModel.countDocuments(con)
         ]);
 
@@ -137,7 +137,7 @@ const getById = async (req, res) => {
             con.isActive = true;
         }
 
-        const blog = await blogModel.findOne(con).populate('coverImage');
+        const blog = await blogModel.findOne(con).populate(['coverImage','categoryId']);
         if (!blog) {
             return apiResponse.notFoundResponse(res, "Blog not found");
         }
@@ -155,7 +155,7 @@ const getTopFeatured = async (req, res) => {
         const blogs = await blogModel.find(con)
             .sort({ createdAt: -1 })
             .limit(4)
-            .populate(['coverImage', 'author']);
+            .populate(['coverImage', 'author', 'categoryId']);
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), blogs);
     } catch (err) {
         console.log(err);
