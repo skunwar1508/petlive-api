@@ -60,7 +60,7 @@ const signUpWebValidation = async (req, res, next) => {
         name: Joi.string().required(),
         phone: Joi.string().required(),
         email: Joi.string().email().required(),
-        qusecurityQuestion: Joi.string().required(),
+        securityQuestion: Joi.string().required(),
         securityAnswer: Joi.string().required(),
         password: Joi.string().min(6).required(),
         confirmPassword: Joi.string().valid(Joi.ref('password')).required(),
