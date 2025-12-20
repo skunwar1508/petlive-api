@@ -67,66 +67,30 @@ const signup = async (req, res) => {
 };
 const signupWeb = async (req, res) => {
     try {
-        const { name, phone, email } = req.body;
+        const reqBody = req.body;
 
-        // Validate input
-        if (!name || !phone || !email) {
-            return apiResponse.validationErrorWithData(res, "Name, phone, and email are required.");
-        }
-
-        // Check if user already exists
+        // Check if user already exists (by phone or email)
         let existingUser = await patientModel.findOne({
-            phone: phone,
-            isDeleted: false,
+            $or: [
+                { phone: reqBody.phone, isDeleted: false },
+                { email: reqBody.email, isDeleted: false }
+            ]
         });
         if (existingUser) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "userexistswithcreds"));
         }
-        // Generate JWT token
-        const otpCode = Math.floor(1000 + Math.random() * 9000); // 4-digit OTP
-        const newOtp = new otpModel({
-            otp: otpCode,
-            phone: phone,
-            usedFor: "SIGNUP",
-        });
 
-        await newOtp.save();
-
-        // Include OTP in the response if in development mode
-        if (process.env.MODE === "development") {
-            return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), { otpCode: otpCode });
-        }
-        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), null);
-    } catch (error) {
-        console.log(error);
-        return apiResponse.somethingWentWrongMsg(res);
-    }
-};
-const verifySignupWebOtp = async (req, res) => {
-    try {
-        const { name, phone, email, otp } = req.body;
-
-        if (!phone || !otp) {
-            return apiResponse.validationErrorWithData(res, "Phone and OTP are required.");
-        }
-
-        // Find latest OTP for SIGNUP
-        const otpDoc = await otpModel.find({ phone, usedFor: "SIGNUP" }).sort({ createdAt: -1 }).limit(1);
-
-        if (!otpDoc.length) {
-            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "otpexprire"));
-        }
-        console.log(otpDoc[0].otp, otp);    
-
-        if (Number(otpDoc[0].otp) !== Number(otp)) {
-            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongotp"));
-        }
+        // Hash password
+        const hashedPassword = await bcrypt.hash(reqBody.password, 10);
 
         // Create new user
         let userData = new patientModel({
-            name,
-            phone,
-            email,
+            name: reqBody.name,
+            phone: reqBody.phone,
+            email: reqBody.email,
+            password: hashedPassword,
+            securityQuestion: reqBody.securityQuestion,
+            securityAnswer: reqBody.securityAnswer,
             isAccept: true,
             isVerified: true,
             userType: "WEB",
@@ -146,9 +110,92 @@ const verifySignupWebOtp = async (req, res) => {
         });
 
         user._doc.token = token;
-        await otpModel.deleteOne({ _id: otpDoc[0]._id });
 
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const loginWeb = async (req, res) => {
+    try {
+        const { emailOrPhone, password } = req.body;
+
+        if (!emailOrPhone || !password) {
+            return apiResponse.validationErrorWithData(res, "Email/Phone and password are required.");
+        }
+
+        // Find user by email or phone
+        let user = await patientModel.findOne({
+            $or: [
+                { email: emailOrPhone, isDeleted: false },
+                { phone: emailOrPhone, isDeleted: false }
+            ],
+            userType: "WEB"
+        });
+
+        if (!user) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        }
+
+        // Check password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongpassword"));
+        }
+
+        // Generate JWT token
+        let payLoad = {
+            id: user._id,
+            role: roles.patient,
+        };
+
+        let token = jwt.sign(payLoad, process.env.LOGIN_KEY, {
+            expiresIn: "24h",
+        });
+
+        user._doc.token = token;
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), user);
+    } catch (error) {
+        console.log(error);
+        return apiResponse.somethingWentWrongMsg(res);
+    }
+};
+
+const forgetWeb = async (req, res) => {
+    try {
+        const { emailOrPhone, securityQuestion, securityAnswer, newPassword } = req.body;
+
+
+        // Find user by email or phone
+        let user = await patientModel.findOne({
+            $or: [
+                { email: emailOrPhone, isDeleted: false },
+                { phone: emailOrPhone, isDeleted: false }
+            ],
+            userType: "WEB"
+        });
+
+        if (!user) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
+        }
+
+
+        // Check security question and answer
+        if (
+            user.securityQuestion !== securityQuestion ||
+            user.securityAnswer !== securityAnswer
+        ) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongsecurityanswer"));
+        }
+
+        // Hash new password and update
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save();
+
+        return apiResponse.successResponse(res, CMS.Lang_Messages("en", "passwordreset"), null);
     } catch (error) {
         console.log(error);
         return apiResponse.somethingWentWrongMsg(res);
@@ -717,5 +764,6 @@ module.exports = {
     getPatientById,
     updatePatientByStatus,
     signupWeb,
-    verifySignupWebOtp
+    loginWeb,
+    forgetWeb,
 };

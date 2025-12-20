@@ -21,7 +21,7 @@ const petSchema = new mongoose.Schema({
         type: Date,
     },
     ownerImage: [{
-         type: mongoose.Schema.Types.ObjectId, ref: 'Image'
+        type: mongoose.Schema.Types.ObjectId, ref: 'Image'
     }],
     name: {
         type: String,
@@ -77,7 +77,7 @@ const petSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
-    petImages:[{type: mongoose.Schema.Types.ObjectId, ref: 'Image'}],
+    petImages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Image' }],
     isAcceptTerms: {
         type: Boolean,
         default: false,
@@ -107,6 +107,17 @@ const petSchema = new mongoose.Schema({
         type: String,
         enum: ['APP', 'WEB'],
         default: 'APP',
+    },
+    securityQuestion: {
+        type: String,
+        trim: true,
+    },
+    securityAnswer: {
+        type: String,
+        trim: true,
+    },
+    password: {
+        type: String,
     },
 }, {
     timestamps: true,

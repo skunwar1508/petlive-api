@@ -60,7 +60,10 @@ const signUpWebValidation = async (req, res, next) => {
         name: Joi.string().required(),
         phone: Joi.string().required(),
         email: Joi.string().email().required(),
-        otp: Joi.number().allow(null, ""),
+        qusecurityQuestion: Joi.string().required(),
+        securityAnswer: Joi.string().required(),
+        password: Joi.string().min(6).required(),
+        confirmPassword: Joi.string().valid(Joi.ref('password')).required(),
     });
 
     const value = schema.validate(req.body);
@@ -73,10 +76,25 @@ const signUpWebValidation = async (req, res, next) => {
 };
 const verifyOtpWebValidation = async (req, res, next) => {
     const schema = Joi.object({
-        name: Joi.string().required(),
-        phone: Joi.string().required(),
-        email: Joi.string().email().required(),
-        otp: Joi.number().required(),
+        emailOrPhone: Joi.string().required(),
+        password: Joi.string().min(6).required(),
+    });
+
+    const value = schema.validate(req.body);
+
+    if (value.error) {
+        const errMsg = await validationCheck(value);
+        return await apiResponse.validationErrorWithData(res, errMsg);
+    }
+    next();
+};
+const verifyForgotWebValidation = async (req, res, next) => {
+    const schema = Joi.object({
+        emailOrPhone: Joi.string().required(),
+        securityQuestion: Joi.string().required(),
+        securityAnswer: Joi.string().required(),
+        newPassword: Joi.string().min(6).required(),
+        confirmPassword: Joi.string().valid(Joi.ref('newPassword')).required(),
     });
 
     const value = schema.validate(req.body);
@@ -311,4 +329,5 @@ module.exports = {
     fullProfileValidation,
     signUpWebValidation,
     verifyOtpWebValidation,
+    verifyForgotWebValidation
 };

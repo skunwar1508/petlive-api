@@ -14,7 +14,8 @@ router.post('/login/verify', patientValidation.verifyOtpValidation, authControll
 router.post('/signup', patientValidation.signUpValidation, authController.signup);
 router.post('/signup/verify', patientValidation.verifyOtpValidation,  authController.verifyOtp);
 router.post('/signup/web', patientValidation.signUpWebValidation, authController.signupWeb);
-router.post('/signup/web/verify', patientValidation.verifyOtpWebValidation,  authController.verifySignupWebOtp);
+router.post('/signup/web/forget', patientValidation.verifyForgotWebValidation,  authController.forgetWeb);
+router.post('/signup/web/login', patientValidation.verifyOtpWebValidation,  authController.loginWeb);
 router.post('/signup/resend', patientValidation.resendValidation, authController.resendOtp);
 router.get('/profile', verifyJWT, authController.getProfile);
 router.get('/profile/:id', verifyJWT, authController.getProfile);
