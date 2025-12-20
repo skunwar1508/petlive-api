@@ -89,6 +89,7 @@ let langauge = {
         created: "Created successfully.",
         updated: "Updated successfully.",
         blogNotFound: "Blog not found.",
+        wrongsecurityanswer: "Wrong security answer.",
     },
 };
 
