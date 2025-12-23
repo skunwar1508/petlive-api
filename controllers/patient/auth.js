@@ -139,6 +139,11 @@ const loginWeb = async (req, res) => {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "usernotfound"));
         }
 
+        // Check if password exists before comparing
+        if (!user.password) {
+            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "wrongpassword"));
+        }
+
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {

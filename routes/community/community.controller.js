@@ -4,6 +4,7 @@ const CMS = require("../../common-modules/index");
 const escape = require("../../common-modules/escape.js");
 const communityModel = require("../../models/community.model.js");
 const apiResponses = require("../../utils/apiResponse.js");
+const { default: mongoose } = require("mongoose");
 
 /**
  * Add a new community (only admin or provider)
@@ -251,51 +252,123 @@ async function deleteCommunity(req, res) {
  */
 async function paginateCommunity(req, res) {
     try {
-        let role = req.doc.role;
-        const startIndex = (req.body.page - 1) * req.body.perPage;
-        const perPage = parseInt(req.body.perPage);
-        const skipCondition = {
-            skip: startIndex,
-            limit: perPage,
-            sort: { createdAt: -1 },
-        };
+        const role = req.doc.role;
+        const userId = mongoose.Types.ObjectId(req.doc.id);
+        const page = parseInt(req.body.page) || 1;
+        const perPage = parseInt(req.body.perPage) || 10;
+        const startIndex = (page - 1) * perPage;
 
-        const con = { isDeleted: false };
-
+        // Build search condition
+        const searchCon = { isDeleted: false };
         if (req.body.searchString) {
-            con["$or"] = [
-                { name: { $regex: ".*" + req.body.searchString + ".*", $options: "i" } },
-                { description: { $regex: ".*" + req.body.searchString + ".*", $options: "i" } }
+            const regex = new RegExp(req.body.searchString, "i");
+            searchCon["$or"] = [
+                { name: regex },
+                { description: regex }
             ];
         }
-        if (role === roles.doctor && req.body.type === "my") {
-            con["members.providerId"] = req.doc.id;
-        }
-        if (role === roles.patient && req.body.type === "my") {
-            con["members.patientId"] = req.doc.id;
-        }else{
-            con["members.patientId"] = { $ne: req.doc.id };
-        }
 
-        console.log(role, roles.doctor, req.body.type, "my");
-
-        const communities = await communityModel.find(con, {}, skipCondition).populate(["image", "createdById"]);
-        const totalCount = await communityModel.countDocuments(con);
-        const communitiesWithFlag = communities.map(community => {
-            const isJoined = community.members.some(
-                member => {
-                    if (role === roles.patient) {
-                        return member.patientId?.toString() === req.doc.id;
-                    } else if (role === roles.doctor) {
-                        return member.providerId?.toString() === req.doc.id;
-                    }
-                }
+        // For admin or others, just paginate all
+        if (role !== roles.patient && role !== roles.doctor) {
+            const [totalCount, communities] = await Promise.all([
+                communityModel.countDocuments(searchCon),
+                communityModel.find(searchCon)
+                    .select("-members") // Exclude members for performance
+                    .populate(["image", "createdById"])
+                    .sort({ createdAt: -1 })
+                    .skip(startIndex)
+                    .limit(perPage)
+            ]);
+            const result = communities.map(community => ({
+                ...community._doc,
+                joinedMembers: community.members?.length || 0,
+                isJoined: false
+            }));
+            return apiResponses.successResWithPagination(
+                res,
+                CMS.Lang_Messages("en", "success"),
+                result,
+                totalCount
             );
-            let joinedMembers = community.members?.length || 0;
-            delete community._doc.members; // Remove members from response
-            return { ...community._doc, isJoined, joinedMembers };
+        }
+
+        // For patient/doctor: aggregate for joined/unjoined in one query
+        // Use aggregation for better performance and to avoid loading all docs in memory
+        const pipeline = [
+            { $match: { ...searchCon } },
+            {
+                $addFields: {
+                    isJoined: {
+                        $gt: [
+                            {
+                                $size: {
+                                    $filter: {
+                                        input: "$members",
+                                        as: "member",
+                                        cond: {
+                                            $or: [
+                                                {
+                                                    $and: [
+                                                        { $eq: [role, roles.patient] },
+                                                        { $eq: ["$$member.patientId", userId] }
+                                                    ]
+                                                },
+                                                {
+                                                    $and: [
+                                                        { $eq: [role, roles.doctor] },
+                                                        { $eq: ["$$member.providerId", userId] }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            0
+                        ]
+                    },
+                    joinedMembers: { $size: "$members" }
+                }
+            },
+            { $sort: { isJoined: -1, createdAt: -1 } },
+            { $project: { members: 0 } },
+            { $skip: startIndex },
+            { $limit: perPage }
+        ];
+
+        // Count total
+        const totalCount = await communityModel.countDocuments(searchCon);
+
+        // Get paginated communities
+        const communities = await communityModel.aggregate(pipeline);
+
+        // Populate image and createdById manually (since aggregate doesn't support .populate)
+        const ids = communities.map(c => c._id);
+        const populated = await communityModel.find({ _id: { $in: ids } })
+            .select("_id image createdById")
+            .populate(["image", "createdById"]);
+
+        // Map population results back
+        const populatedMap = {};
+        populated.forEach(c => {
+            populatedMap[c._id.toString()] = {
+                image: c.image,
+                createdById: c.createdById
+            };
         });
-        return apiResponses.successResWithPagination(res, CMS.Lang_Messages("en", "success"), communitiesWithFlag, totalCount);
+
+        const result = communities.map(c => ({
+            ...c,
+            image: populatedMap[c._id.toString()]?.image || null,
+            createdById: populatedMap[c._id.toString()]?.createdById || null
+        }));
+
+        return apiResponses.successResWithPagination(
+            res,
+            CMS.Lang_Messages("en", "success"),
+            result,
+            totalCount
+        );
     } catch (error) {
         console.error(error);
         return apiResponses.somethingWentWrongMsg(res);
