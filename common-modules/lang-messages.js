@@ -90,6 +90,7 @@ let langauge = {
         updated: "Updated successfully.",
         blogNotFound: "Blog not found.",
         wrongsecurityanswer: "Wrong security answer.",
+        completeProfilePendingApproval: "Please complete your profile. It is pending for approval after completion.",
     },
 };
 

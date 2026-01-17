@@ -49,11 +49,11 @@ const validationErrorWithData = async (res, msg) => {
 // ==========================================================================
 // ==========================================================================
 
-const errorMessage = async (res, statusCode, msg) => {
+const errorMessage = async (res, statusCode, msg, data = null) => {
     return res.status(statusCode).json({
         status: false,
         message: msg,
-        data: null,
+        data: data,
         // message:msg
     })
 }

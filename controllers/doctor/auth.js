@@ -22,8 +22,12 @@ const login = async (req, res) => {
         if (doctor.approveProfile === "Rejected") {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profileRejected"));
         }
-        if (doctor.approveProfile === "Pending" && doctor.isProfileCompleted) {
-            return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profilePending"));
+        if (doctor.approveProfile === "Pending") {
+            if (doctor.isProfileCompleted) {
+                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profilePending"));
+            } else {
+                return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "completeProfilePendingApproval"), doctor);
+            }
         }
 
 
@@ -255,7 +259,7 @@ const signupStep3 = async (req, res) => {
         if (!doctor?.isProfileCompleted) {
             doctor.lastStep = 4;
         }
-        doctor.isProfileCompleted = true;
+        // doctor.isProfileCompleted = true;
         await doctor.save();
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
     } catch (error) {
@@ -350,6 +354,7 @@ const signupStep8 = async (req, res) => {
         if (!doctor?.isProfileCompleted) {
             doctor.lastStep = 9;
         }
+        doctor.isProfileCompleted = true;
         await doctor.save();
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
     } catch (error) {
