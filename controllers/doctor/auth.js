@@ -22,7 +22,7 @@ const login = async (req, res) => {
         if (doctor.approveProfile === "Rejected") {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profileRejected"));
         }
-        if (doctor.approveProfile === "Pending") {
+        if (doctor.approveProfile === "Pending" && doctor.isProfileCompleted) {
             return apiResponse.errorMessage(res, 400, CMS.Lang_Messages("en", "profilePending"));
         }
 
