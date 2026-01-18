@@ -241,6 +241,7 @@ const updateProfileValidation = async (req, res, next) => {
         primarySpecialisation: Joi.string().required(),
         otherSpecialisation: Joi.string().allow('', null),
         services: Joi.array().items(Joi.string()).required(),
+        consultationFee: Joi.string().allow(null, ''),
         animalPreference: Joi.array().items(Joi.string().valid("Dog", "Cat")).required(),
         bio: Joi.string().required()
     });
