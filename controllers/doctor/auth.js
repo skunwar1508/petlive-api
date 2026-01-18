@@ -332,6 +332,7 @@ const signupStep7 = async (req, res) => {
         if (!doctor?.isProfileCompleted) {
             doctor.lastStep = 8;
         }
+        doctor.isProfileCompleted = true;
         await doctor.save();
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), doctor);
     } catch (error) {
