@@ -83,7 +83,7 @@ module.exports = function (io) {
                         _id: { $nin: activeDoctorIds }
                     }
                 },
-                { $sample: { size: 10 } }
+                // { $sample: { size: 10 } }
             ]);
             console.log("Doctors:", doctors);
             if (!doctors.length) {
