@@ -21,5 +21,6 @@ router.use("/community", require("../routes/community/community.route.js"));
 router.use("/request", require("../routes/socket/socket.routes.js"));
 router.use("/contact", require("../routes/contact/contact.index.js"));
 router.use("/inquiry", require("../routes/inquiry/inquiry.index.js"));
+router.use("/dashboard", require("../routes/dashboard/dashboard.index.js"));
 
 module.exports = router;
