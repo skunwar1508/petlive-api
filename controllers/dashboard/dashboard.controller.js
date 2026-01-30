@@ -5,7 +5,7 @@ const apiResponse = require('../../utils/apiResponse');
 
 const getDoctorDashboard = async (req, res) => {
     try {
-        const doctorId = req.user.id;
+        const doctorId = req.doc.id;
 
         // Fetch dashboard statistics from ChatSession
         const totalSessions = await ChatSession.countDocuments({
@@ -31,10 +31,18 @@ const getDoctorDashboard = async (req, res) => {
             doctorId,
             status: { $in: ['pending', 'accepted'] }
         })
-            .populate('patientId', 'name email phone')
+            .populate({
+            path: 'patientId',
+            select: 'name email phone ownerImage',
+            populate: {
+                path: 'ownerImage',
+                model: 'Image'
+            }
+            })
             .populate('serviceId', 'name')
             .sort({ createdAt: 1 })
             .limit(5);
+
 
         // Fetch chat session data
         const activeChatSessions = await ChatSession.countDocuments({
@@ -83,7 +91,15 @@ const getDoctorDashboard = async (req, res) => {
         //     totalEarning += fee;
         //     totalCommission += commission;
         // });
-        let currentMonth = currentDate.getMonth() + 1; // Months are zero-based
+        // Get the last chat session to determine the month
+        const lastChatSession = await ChatSession.findOne({
+            doctorId,
+            status: { $in: ['accepted', 'started', 'ended'] }
+        }).sort({ createdAt: -1 });
+
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let currentMonth = lastChatSession ? new Date(lastChatSession.createdAt).getMonth() : currentDate.getMonth();
+        console.log("currentMonth", currentMonth);
 
         let resData = {
             totalSessions,
@@ -97,7 +113,8 @@ const getDoctorDashboard = async (req, res) => {
             totalEarning,
             totalCommission,
             totalConsultation,
-            currentMonth
+            lastChatSessionDate: lastChatSession ? lastChatSession.createdAt : null,
+            currentMonth: months[currentMonth]
         }
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), resData);
     } catch (error) {
