@@ -83,6 +83,7 @@ const getDoctorDashboard = async (req, res) => {
         //     totalEarning += fee;
         //     totalCommission += commission;
         // });
+        let currentMonth = currentDate.getMonth() + 1; // Months are zero-based
 
         let resData = {
             totalSessions,
@@ -95,7 +96,8 @@ const getDoctorDashboard = async (req, res) => {
             monthlyPatients: monthlyPatients.length,
             totalEarning,
             totalCommission,
-            totalConsultation
+            totalConsultation,
+            currentMonth
         }
         return apiResponse.successResponse(res, CMS.Lang_Messages("en", "success"), resData);
     } catch (error) {
