@@ -93,12 +93,12 @@ async function chatroomPagin(req, res) {
             {
                 $lookup: {
                     from: "images",
-                    localField: "patientDetails.profileImage",
+                    localField: "patientDetails.ownerImage",
                     foreignField: "_id",
-                    as: "patientDetails.profileImage"
+                    as: "patientDetails.ownerImage"
                 }
             },
-            { $unwind: { path: "$patientDetails.profileImage", preserveNullAndEmptyArrays: true } },
+            { $unwind: { path: "$patientDetails.ownerImage", preserveNullAndEmptyArrays: true } },
             {
                 $match: {
                     ...matchStage,
