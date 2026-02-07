@@ -16,6 +16,8 @@ module.exports = function (io) {
         try {
             if (socket.handshake.query && socket.handshake.query.token) {
                 const token = socket.handshake.query.token;
+                console.log("Token received:", token);
+                console.log("userType", socket.handshake.query.type);
 
                 jwt.verify(token, process.env.LOGIN_KEY, function (err, _) {
                     if (err) {
